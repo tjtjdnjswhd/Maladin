@@ -1,6 +1,6 @@
 ﻿namespace Maladin.Data.Models
 {
-    public class Translator : EntityBase
+    public sealed class Translator : EntityBase
     {
         public required string Name { get; set; }
 #nullable enable

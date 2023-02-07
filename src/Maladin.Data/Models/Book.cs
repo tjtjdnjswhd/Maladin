@@ -1,6 +1,6 @@
 ﻿namespace Maladin.Data.Models
 {
-    public class Book : EntityBase
+    public sealed class Book : EntityBase
     {
         public required string Isbn { get; set; }
         public required int Stock { get; set; }

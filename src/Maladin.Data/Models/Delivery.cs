@@ -1,6 +1,6 @@
 ﻿namespace Maladin.Data.Models
 {
-    public class Delivery : EntityBase
+    public sealed class Delivery : EntityBase
     {
         public required string Name { get; set; }
 

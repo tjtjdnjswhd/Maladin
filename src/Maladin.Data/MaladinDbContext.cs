@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maladin.Data
 {
-    public class MaladinDbContext : DbContext
+    public sealed class MaladinDbContext : DbContext
     {
         public DbSet<User> Users { get; set; }
         public DbSet<OAuthId> OAuthIds { get; set; }

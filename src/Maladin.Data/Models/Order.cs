@@ -1,6 +1,6 @@
 ﻿namespace Maladin.Data.Models
 {
-    public class Order : EntityBase
+    public sealed class Order : EntityBase
     {
         public required int UserId { get; set; }
         public int? DeliveryId { get; set; }

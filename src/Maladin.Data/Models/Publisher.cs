@@ -1,6 +1,6 @@
 ﻿namespace Maladin.Data.Models
 {
-    public class Publisher : EntityBase
+    public sealed class Publisher : EntityBase
     {
         public required string Name { get; set; }
 #nullable enable

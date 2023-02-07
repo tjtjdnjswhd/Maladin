@@ -1,6 +1,6 @@
 ﻿namespace Maladin.Data.Models
 {
-    public class OAuthProvider : EntityBase
+    public sealed class OAuthProvider : EntityBase
     {
         public required string Name { get; set; }
 

@@ -1,6 +1,6 @@
 ﻿namespace Maladin.Data.Models
 {
-    public class IamportPayment : EntityBase
+    public sealed class IamportPayment : EntityBase
     {
         public required string ImpUid { get; set; }
         public required int OrderId { get; set; }

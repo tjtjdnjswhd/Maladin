@@ -1,6 +1,6 @@
 ﻿namespace Maladin.Data.Models
 {
-    public class Point : EntityBase
+    public sealed class Point : EntityBase
     {
         public required int UserId { get; set; }
         public required int Balance { get; set; }

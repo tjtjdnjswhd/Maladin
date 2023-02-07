@@ -1,6 +1,6 @@
 ﻿namespace Maladin.Data.Models
 {
-    public class BookCategory : EntityBase
+    public sealed class BookCategory : EntityBase
     {
         public int? ParentId { get; set; }
         public required string Name { get; set; }

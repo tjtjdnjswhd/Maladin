@@ -1,6 +1,6 @@
 ﻿namespace Maladin.Data.Models
 {
-    public class Author : EntityBase
+    public sealed class Author : EntityBase
     {
         public required string Name { get; set; }
 #nullable enable

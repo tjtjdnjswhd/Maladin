@@ -1,6 +1,6 @@
 ﻿namespace Maladin.Data.Models
 {
-    public class User : EntityBase
+    public sealed class User : EntityBase
     {
         public required int RoleId { get; set; }
         public required int MembershipId { get; set; }

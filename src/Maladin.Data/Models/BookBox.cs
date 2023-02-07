@@ -1,6 +1,6 @@
 ﻿namespace Maladin.Data.Models
 {
-    public class BookBox : EntityBase
+    public sealed class BookBox : EntityBase
     {
         public required int UserId { get; set; }
         public required int BookId { get; set; }
