@@ -12,7 +12,7 @@
 
     public enum EErrorCode
     {
-        Success,
+        NoError,
         NotExistId,
         NotExistEmail,
         NotExistNameIdentifier,
@@ -20,6 +20,8 @@
         DuplicateName,
         DuplicateEmail,
         DuplicateNameIdentifier,
-        DuplicateRole
+        DuplicateRole,
+        InvalidPayment,
+        DeliveryStarted
     }
 }
