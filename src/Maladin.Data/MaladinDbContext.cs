@@ -1,4 +1,5 @@
-﻿using Maladin.Data.Models;
+﻿using Maladin.Data.Enums;
+using Maladin.Data.Models;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -111,7 +112,7 @@ namespace Maladin.Data
 
             modelBuilder.Entity<Order>(builder =>
             {
-                builder.ToTable("Order", tb => tb.HasCheckConstraint("CK_Order_TotalAmount", "[TotalAmount] > 0"));
+                builder.ToTable("Order");
 
                 builder.Property(o => o.OrderedAt);
                 builder.Property(o => o.Address).IsUnicode();
@@ -120,6 +121,7 @@ namespace Maladin.Data
                 builder.Property(o => o.ReceiverName).IsUnicode().HasMaxLength(255);
                 builder.Property(o => o.Message).IsUnicode().HasMaxLength(255);
                 builder.Property(o => o.PhoneNumber).HasMaxLength(255);
+                builder.Property(o => o.State).HasConversion<string>();
 
                 builder.HasOne(o => o.User).WithMany(u => u.Orders).HasForeignKey(o => o.UserId);
                 builder.HasOne(o => o.Delivery).WithMany(d => d.Orders).HasForeignKey(o => o.DeliveryId);
