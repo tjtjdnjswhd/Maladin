@@ -1,19 +1,44 @@
-﻿namespace Maladin.Service.Models
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
+
+namespace Maladin.Service.Models
 {
     public class ServiceResult
     {
-        public required EErrorCode ErrorCode { get; set; }
+        public static readonly ServiceResult NoError = new(EErrorCode.NoError);
+        public static readonly ServiceResult Canceled = new(EErrorCode.OperationCanceled);
+        public static readonly ServiceResult UpdateError = new(EErrorCode.UpdateError);
+
+        [SetsRequiredMembers]
+        public ServiceResult(EErrorCode errorCode, string? errorArgumentName = null)
+        {
+            ErrorCode = errorCode;
+            ErrorArgumentName = errorArgumentName;
+        }
+
+        public required string? ErrorArgumentName { get; set; }
+        public required EErrorCode ErrorCode { get; init; }
     }
 
     public class ServiceResult<T> : ServiceResult
     {
-        public required T? Data { get; set; }
+        public static new readonly ServiceResult<T> Canceled = new(default, EErrorCode.OperationCanceled);
+        public static new readonly ServiceResult<T> UpdateError = new(default, EErrorCode.UpdateError);
+        public static new ServiceResult<T> NoError(T data) => new(data, EErrorCode.NoError);
+
+        [SetsRequiredMembers]
+        public ServiceResult(T? data, EErrorCode errorCode, string? errorArgumentName = null) : base(errorCode, errorArgumentName)
+        {
+            Data = data;
+        }
+
+        public required T? Data { get; init; }
     }
 
     public enum EErrorCode
     {
         NoError,
-        NotExistId,
+        NotExistKey,
         NotExistEmail,
         NotExistNameIdentifier,
         NotMatchPassword,
@@ -22,6 +47,9 @@
         DuplicateNameIdentifier,
         DuplicateRole,
         InvalidPayment,
-        DeliveryStarted
+        DeliveryStarted,
+        NotEnoughPoint,
+        UpdateError,
+        OperationCanceled
     }
 }
