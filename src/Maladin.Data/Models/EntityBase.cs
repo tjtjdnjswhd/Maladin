@@ -3,8 +3,8 @@
 namespace Maladin.Data.Models
 {
     [PrimaryKey(nameof(Id))]
-    public class EntityBase
+    public abstract class EntityBase
     {
-        public required int Id { get; set; }
+        public  int Id { get; set; }
     }
 }
