@@ -8,7 +8,6 @@
         public required string Email { get; set; }
 #nullable enable
         public string? PasswordHash { get; set; }
-        public string? Salt { get; set; }
         public required DateTimeOffset SignupAt { get; set; }
         public required string SignupIp { get; set; }
         public DateTimeOffset? UpdateAt { get; set; }

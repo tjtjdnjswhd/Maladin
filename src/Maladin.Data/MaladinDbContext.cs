@@ -1,5 +1,4 @@
-﻿using Maladin.Data.Enums;
-using Maladin.Data.Models;
+﻿using Maladin.Data.Models;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -37,15 +36,18 @@ namespace Maladin.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
             modelBuilder.Entity<User>(builder =>
             {
-                builder.ToTable("User", tb => tb.HasCheckConstraint("CTK_User_PasswordHash_Salt_IsOAuth", "[IsOAuth] = 1 or ([PasswordHash] <> null and [Salt] <> null)"));
+                builder.ToTable("User", tb => tb.HasCheckConstraint("CTK_User_PasswordHash_IsOAuth", "[IsOAuth] = 1 OR ([PasswordHash] <> null)"));
+                builder.HasQueryFilter(u => u.IsEmailAuthenticated);
+
                 builder.HasIndex(nameof(User.Email));
                 builder.HasIndex(nameof(User.Name));
+
                 builder.Property(u => u.Name).IsUnicode().HasMaxLength(20);
                 builder.Property(u => u.Email).HasMaxLength(255);
                 builder.Property(u => u.PasswordHash);
-                builder.Property(u => u.Salt);
                 builder.Property(u => u.SignupAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
                 builder.Property(u => u.SignupIp).HasMaxLength(255);
                 builder.Property(u => u.UpdateAt);
@@ -67,7 +69,7 @@ namespace Maladin.Data
                 builder.Property(o => o.NameIdentifier);
 
                 builder.HasOne(o => o.User).WithMany(u => u.OauthIds).HasForeignKey(u => u.UserId);
-                builder.HasOne(o => o.OAuthProvider).WithMany(p => p.OAuthIds).HasForeignKey(u => u.ProivderId);
+                builder.HasOne(o => o.OAuthProvider).WithMany(p => p.OAuthIds).HasForeignKey(u => u.ProviderId);
             });
 
             modelBuilder.Entity<OAuthProvider>(builder =>
