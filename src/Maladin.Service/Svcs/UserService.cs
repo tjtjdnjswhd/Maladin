@@ -1,10 +1,13 @@
 ﻿using Maladin.Data;
 using Maladin.Data.Models;
+using Maladin.Service.Extensions;
 using Maladin.Service.Interfaces;
 using Maladin.Service.Models;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+
+using Utils;
 
 namespace Maladin.Service.Svcs
 {
@@ -12,11 +15,13 @@ namespace Maladin.Service.Svcs
     {
         private readonly MaladinDbContext _dbContext;
         private readonly ILogger<UserService> _logger;
+        private readonly IExceptionLogger<UserService> _exceptionLogger;
 
-        public UserService(MaladinDbContext dbContext, ILogger<UserService> logger)
+        public UserService(MaladinDbContext dbContext, ILogger<UserService> logger, IExceptionLogger<UserService> exceptionLogger)
         {
             _dbContext = dbContext;
             _logger = logger;
+            _exceptionLogger = exceptionLogger;
         }
 
         /// <inheritdoc/>
@@ -25,14 +30,15 @@ namespace Maladin.Service.Svcs
             User? user;
             try
             {
-                user = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, cancellationToken).ConfigureAwait(false);
+                user = await _dbContext.FindAsync<User>(new object[] { userId }, cancellationToken).ConfigureAwait(false);
             }
-            catch (OperationCanceledException)
+            catch (Exception e)
             {
-                return ServiceResult<User?>.Canceled;
+                _exceptionLogger.Log(e);
+                throw;
             }
 
-            ServiceResult<User?> result = user == null ? new(null, EErrorCode.NotExistKey, nameof(userId)) : ServiceResult<User?>.NoError(user);
+            ServiceResult<User?> result = user == null ? new(null, EErrorCode.NotExist, nameof(userId)) : ServiceResult<User?>.NoError(user);
             return result;
         }
 
@@ -44,12 +50,13 @@ namespace Maladin.Service.Svcs
             {
                 membership = await _dbContext.Memberships.AsNoTracking().FirstOrDefaultAsync(m => m.Users.Any(u => u.Id == userId), cancellationToken).ConfigureAwait(false);
             }
-            catch (OperationCanceledException)
+            catch (Exception e)
             {
-                return ServiceResult<Membership?>.Canceled;
+                _exceptionLogger.Log(e);
+                throw;
             }
 
-            ServiceResult<Membership?> result = membership == null ? new(null, EErrorCode.NotExistKey, nameof(userId)) : ServiceResult<Membership?>.NoError(membership);
+            ServiceResult<Membership?> result = membership == null ? new(null, EErrorCode.NotExist, nameof(userId)) : ServiceResult<Membership?>.NoError(membership);
             return result;
         }
 
@@ -59,16 +66,30 @@ namespace Maladin.Service.Svcs
             User? user;
             try
             {
-                user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken).ConfigureAwait(false);
+                user = await _dbContext.FindAsync<User>(new object[] { userId }, cancellationToken).ConfigureAwait(false);
             }
-            catch (OperationCanceledException)
+            catch (Exception e)
             {
-                return ServiceResult.Canceled;
+                _exceptionLogger.Log(e);
+                throw;
             }
 
             if (user == null)
             {
-                return new ServiceResult(EErrorCode.NotExistKey, nameof(userId));
+                return new ServiceResult(EErrorCode.NotExist, nameof(userId));
+            }
+
+            try
+            {
+                if (!await _dbContext.IsExistAsync<Membership>(membershipId, cancellationToken).ConfigureAwait(false))
+                {
+                    return new ServiceResult(EErrorCode.NotExist, nameof(membershipId));
+                }
+            }
+            catch (Exception e)
+            {
+                _exceptionLogger.Log(e);
+                throw;
             }
 
             user.MembershipId = membershipId;
@@ -77,13 +98,10 @@ namespace Maladin.Service.Svcs
             {
                 await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch (DbUpdateException)
+            catch (Exception e)
             {
-                return new ServiceResult(EErrorCode.NotExistKey, nameof(membershipId));
-            }
-            catch (OperationCanceledException)
-            {
-                return ServiceResult.Canceled;
+                _exceptionLogger.Log(e);
+                throw;
             }
 
             return ServiceResult.NoError;
@@ -92,9 +110,9 @@ namespace Maladin.Service.Svcs
         /// <inheritdoc/>
         public async Task<ServiceResult<int>> GetPointBalanceAsync(int userId, CancellationToken cancellationToken = default)
         {
-            if (!IsUserExist(userId))
+            if (!_dbContext.IsExist<User>(userId))
             {
-                return new ServiceResult<int>(-1, EErrorCode.NotExistKey, nameof(userId));
+                return new ServiceResult<int>(-1, EErrorCode.NotExist, nameof(userId));
             }
 
             try
@@ -102,18 +120,19 @@ namespace Maladin.Service.Svcs
                 int amount = await _dbContext.Points.Where(p => p.UserId == userId && p.ExpireAt.CompareTo(DateTimeOffset.Now) > 0).SumAsync(p => p.Balance, cancellationToken).ConfigureAwait(false);
                 return ServiceResult<int>.NoError(amount);
             }
-            catch (OperationCanceledException)
+            catch (Exception e)
             {
-                return ServiceResult<int>.Canceled;
+                _exceptionLogger.Log(e);
+                throw;
             }
         }
 
         /// <inheritdoc/>
         public ServiceResult<IEnumerable<Point>> GetPointsDetail(int userId)
         {
-            if (!IsUserExist(userId))
+            if (!_dbContext.IsExist<User>(userId))
             {
-                return new ServiceResult<IEnumerable<Point>>(Enumerable.Empty<Point>(), EErrorCode.NotExistKey, nameof(userId));
+                return new ServiceResult<IEnumerable<Point>>(Enumerable.Empty<Point>(), EErrorCode.NotExist, nameof(userId));
             }
 
             IEnumerable<Point> points = _dbContext.Points.Where(p => p.UserId == userId && p.ExpireAt.CompareTo(DateTimeOffset.Now) > 0).AsNoTracking().AsEnumerable();
@@ -123,9 +142,9 @@ namespace Maladin.Service.Svcs
         /// <inheritdoc/>
         public async Task<ServiceResult> AddAddressAsync(int userId, string address, bool isDefault, CancellationToken cancellationToken = default)
         {
-            if (!IsUserExist(userId))
+            if (!_dbContext.IsExist<User>(userId))
             {
-                return new ServiceResult(EErrorCode.NotExistKey, nameof(userId));
+                return new ServiceResult(EErrorCode.NotExist, nameof(userId));
             }
 
             UserAddress userAddress = new()
@@ -149,13 +168,10 @@ namespace Maladin.Service.Svcs
                 _dbContext.UserAddresses.Add(userAddress);
                 await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch (DbUpdateException)
+            catch (Exception e)
             {
-                return ServiceResult.UpdateError;
-            }
-            catch (OperationCanceledException)
-            {
-                return ServiceResult.Canceled;
+                _exceptionLogger.Log(e);
+                throw;
             }
 
             return ServiceResult.NoError;
@@ -164,9 +180,9 @@ namespace Maladin.Service.Svcs
         /// <inheritdoc/>
         public async Task<ServiceResult<UserAddress?>> GetDefaultAddressOrNullAsync(int userId, CancellationToken cancellationToken = default)
         {
-            if (!IsUserExist(userId))
+            if (!_dbContext.IsExist<User>(userId))
             {
-                return new ServiceResult<UserAddress?>(null, EErrorCode.NotExistKey, nameof(userId));
+                return new ServiceResult<UserAddress?>(null, EErrorCode.NotExist, nameof(userId));
             }
 
             UserAddress? address;
@@ -174,9 +190,10 @@ namespace Maladin.Service.Svcs
             {
                 address = await _dbContext.UserAddresses.AsNoTracking().FirstOrDefaultAsync(a => a.UserId == userId && a.IsDefault, cancellationToken).ConfigureAwait(false);
             }
-            catch (OperationCanceledException)
+            catch (Exception e)
             {
-                return ServiceResult<UserAddress?>.Canceled;
+                _exceptionLogger.Log(e);
+                throw;
             }
 
             return ServiceResult<UserAddress?>.NoError(address);
@@ -185,9 +202,9 @@ namespace Maladin.Service.Svcs
         /// <inheritdoc/>
         public ServiceResult<IEnumerable<UserAddress>> GetAddresses(int userId)
         {
-            if (!IsUserExist(userId))
+            if (!_dbContext.IsExist<User>(userId))
             {
-                return new ServiceResult<IEnumerable<UserAddress>>(null, EErrorCode.NotExistKey, nameof(userId));
+                return new ServiceResult<IEnumerable<UserAddress>>(null, EErrorCode.NotExist, nameof(userId));
             }
 
             var result = _dbContext.UserAddresses.Where(a => a.UserId == userId).AsNoTracking().AsEnumerable();
@@ -199,18 +216,19 @@ namespace Maladin.Service.Svcs
         {
             try
             {
-                UserAddress? address = await _dbContext.UserAddresses.FirstOrDefaultAsync(a => a.Id == addressId, cancellationToken).ConfigureAwait(false);
+                UserAddress? address = await _dbContext.FindAsync<UserAddress>(new object[] { addressId }, cancellationToken).ConfigureAwait(false);
                 if (address == null)
                 {
-                    return new ServiceResult(EErrorCode.NotExistKey, nameof(addressId));
+                    return new ServiceResult(EErrorCode.NotExist, nameof(addressId));
                 }
 
                 _dbContext.UserAddresses.Remove(address);
                 await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch (DbUpdateException)
+            catch (Exception e)
             {
-                return ServiceResult.Canceled;
+                _exceptionLogger.Log(e);
+                throw;
             }
 
             return ServiceResult.NoError;
@@ -221,11 +239,6 @@ namespace Maladin.Service.Svcs
         {
             IEnumerable<Membership> memberships = _dbContext.Memberships.AsEnumerable();
             return ServiceResult<IEnumerable<Membership>>.NoError(memberships);
-        }
-
-        private bool IsUserExist(int userId)
-        {
-            return _dbContext.Users.Any(u => u.Id == userId);
         }
     }
 }

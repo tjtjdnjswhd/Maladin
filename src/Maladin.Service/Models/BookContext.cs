@@ -9,8 +9,8 @@
             Price = price;
         }
 
-        public required string Isbn { get; init; }
-        public required int Stock { get; init; }
-        public required int Price { get; init; }
+        public string Isbn { get; init; }
+        public int Stock { get; init; }
+        public int Price { get; init; }
     }
 }

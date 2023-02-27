@@ -17,16 +17,16 @@
             PublishAt = publishAt;
         }
 
-        public required int BookId { get; init; }
-        public required int PublisherId { get; init; }
-        public required int AuthorId { get; init; }
-        public required int? TranslatorId { get; init; }
-        public required int CategoryId { get; init; }
-        public required string Title { get; init; }
-        public required string Overview { get; init; }
-        public required string PaperSize { get; init; }
-        public required int PageCount { get; init; }
-        public required string CoverUrl { get; init; }
-        public required DateTimeOffset PublishAt { get; init; }
+        public int BookId { get; init; }
+        public int PublisherId { get; init; }
+        public int AuthorId { get; init; }
+        public int? TranslatorId { get; init; }
+        public int CategoryId { get; init; }
+        public string Title { get; init; }
+        public string Overview { get; init; }
+        public string PaperSize { get; init; }
+        public int PageCount { get; init; }
+        public string CoverUrl { get; init; }
+        public DateTimeOffset PublishAt { get; init; }
     }
 }

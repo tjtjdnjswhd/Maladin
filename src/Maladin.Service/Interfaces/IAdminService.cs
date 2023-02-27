@@ -1,4 +1,6 @@
-﻿using Maladin.Data.Models;
+﻿using Microsoft.EntityFrameworkCore;
+
+using Maladin.Data.Models;
 using Maladin.Service.Models;
 
 namespace Maladin.Service.Interfaces
@@ -11,12 +13,15 @@ namespace Maladin.Service.Interfaces
         /// <param name="roleName"></param>
         /// <param name="priority"></param>
         /// <returns></returns>
+        /// <exception cref="OperationCanceledException"></exception>
+        /// <exception cref="DbUpdateException"></exception>
         public Task<ServiceResult> AddRoleAsync(string roleName, int priority);
 
         /// <summary>
         /// 존재하는 <see cref="Role"/> 개체들을 반환합니다
         /// </summary>
         /// <returns></returns>
+        /// <exception cref="OperationCanceledException"></exception>
         public Task<ServiceResult<IEnumerable<Role>>> GetRolesAsync();
 
         /// <summary>
@@ -25,6 +30,8 @@ namespace Maladin.Service.Interfaces
         /// <param name="userId"></param>
         /// <param name="roleId"></param>
         /// <returns></returns>
+        /// <exception cref="OperationCanceledException"></exception>
+        /// <exception cref="DbUpdateException"></exception>
         public Task<ServiceResult> UpdateRoleAsync(int userId, int roleId);
     }
 }

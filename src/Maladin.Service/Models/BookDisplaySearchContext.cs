@@ -17,16 +17,16 @@
             TranslatorIds = translatorIds;
         }
 
-        public required string Title { get; init; }
-        public required int Skip { get; init; }
-        public required int Take { get; init; }
-        public required DateTimeOffset? PublishDateStart { get; init; }
-        public required DateTimeOffset? PublishDateEnd { get; init; }
-        public required int? RatingStart { get; init; }
-        public required int? RatingEnd { get; init; }
-        public required int[]? CategoryIds { get; init; }
-        public required int[]? PublisherIds { get; init; }
-        public required int[]? AuthorIds { get; init; }
-        public required int[]? TranslatorIds { get; init; }
+        public string Title { get; init; }
+        public int Skip { get; init; }
+        public int Take { get; init; }
+        public DateTimeOffset? PublishDateStart { get; init; }
+        public DateTimeOffset? PublishDateEnd { get; init; }
+        public int? RatingStart { get; init; }
+        public int? RatingEnd { get; init; }
+        public int[]? CategoryIds { get; init; }
+        public int[]? PublisherIds { get; init; }
+        public int[]? AuthorIds { get; init; }
+        public int[]? TranslatorIds { get; init; }
     }
 }

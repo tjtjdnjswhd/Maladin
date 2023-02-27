@@ -1,28 +1,32 @@
-﻿using MailKit.Net.Smtp;
-
-using Maladin.Data;
+﻿using Maladin.Data;
 using Maladin.Data.Models;
+using Maladin.Service.Extensions;
 using Maladin.Service.Interfaces;
 using Maladin.Service.Models;
-using Maladin.Service.Settings;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
-using MimeKit;
+using Utils;
 
 namespace Maladin.Service.Svcs
 {
     public class AccountService : IAccountService
     {
         private readonly MaladinDbContext _dbContext;
+        private readonly IDistributedCache _cache;
+        private readonly IMailService _mailService;
         private readonly ILogger<AccountService> _logger;
+        private readonly IExceptionLogger<AccountService> _exceptionLogger;
 
-        public AccountService(MaladinDbContext dbContext, SmtpClient smtpClient, ILogger<AccountService> logger)
+        public AccountService(MaladinDbContext dbContext, IDistributedCache cache, IMailService mailService, ILogger<AccountService> logger, IExceptionLogger<AccountService> exceptionLogger)
         {
             _dbContext = dbContext;
+            _cache = cache;
+            _mailService = mailService;
             _logger = logger;
+            _exceptionLogger = exceptionLogger;
         }
 
         /// <inheritdoc/>
@@ -30,12 +34,13 @@ namespace Maladin.Service.Svcs
         {
             try
             {
-                bool result = await _dbContext.Users.AnyAsync(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase), cancellationToken);
+                bool result = await _dbContext.Users.AnyAsync(u => u.Email == email, cancellationToken);
                 return ServiceResult<bool>.NoError(result);
             }
-            catch (OperationCanceledException)
+            catch (Exception e)
             {
-                return ServiceResult<bool>.Canceled;
+                _exceptionLogger.Log(e);
+                throw;
             }
         }
 
@@ -44,12 +49,13 @@ namespace Maladin.Service.Svcs
         {
             try
             {
-                bool result = await _dbContext.Users.AnyAsync(u => u.Name.Equals(name, StringComparison.OrdinalIgnoreCase), cancellationToken);
+                bool result = await _dbContext.Users.AnyAsync(u => u.Name == name, cancellationToken);
                 return ServiceResult<bool>.NoError(result);
             }
-            catch (OperationCanceledException)
+            catch (Exception e)
             {
-                return ServiceResult<bool>.Canceled;
+                _exceptionLogger.Log(e);
+                throw;
             }
         }
 
@@ -59,16 +65,17 @@ namespace Maladin.Service.Svcs
             User? user;
             try
             {
-                user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase), cancellationToken).ConfigureAwait(false);
+                user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == email, cancellationToken).ConfigureAwait(false);
             }
-            catch (OperationCanceledException)
+            catch (Exception e)
             {
-                return ServiceResult<User?>.Canceled;
+                _exceptionLogger.Log(e);
+                throw;
             }
 
             if (user == null)
             {
-                return new ServiceResult<User?>(null, EErrorCode.NotExistEmail, nameof(email));
+                return new ServiceResult<User?>(null, EErrorCode.NotExist, nameof(email));
             }
 
             if (user.PasswordHash == null)
@@ -85,39 +92,58 @@ namespace Maladin.Service.Svcs
             {
                 user.LastLoginDate = DateTimeOffset.UtcNow;
                 user.LastLoginIp = ip;
-                _dbContext.SaveChanges();
+                try
+                {
+                    await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    _exceptionLogger.Log(e);
+                    throw;
+                }
+
                 return ServiceResult<User?>.NoError(user);
             }
 
-            return new ServiceResult<User?>(null, EErrorCode.NotMatchPasswordHash);
+            return new ServiceResult<User?>(null, EErrorCode.HashNotMatch);
         }
 
         /// <inheritdoc/>
         public async Task<ServiceResult<User?>> LoginAsync(int providerId, string nameIdentifier, string ip, CancellationToken cancellationToken = default)
         {
-            if (!_dbContext.OAuthProviders.Any(p => p.Id == providerId))
+            if (!_dbContext.IsExist<OAuthProvider>(providerId))
             {
-                return new ServiceResult<User?>(null, EErrorCode.NotExistOAuthProvider);
+                return new ServiceResult<User?>(null, EErrorCode.NotExist, nameof(providerId));
             }
 
             User? user;
             try
             {
-                user = await _dbContext.Users.FirstOrDefaultAsync(u => u.IsOAuth && u.OauthIds.Any(oauth => oauth.ProviderId == providerId && oauth.NameIdentifier == nameIdentifier), cancellationToken: cancellationToken).ConfigureAwait(false);
+                user = await _dbContext.Users.FirstOrDefaultAsync(u => u.IsOAuth && _dbContext.IsNameIdentifierDuplicate(providerId, nameIdentifier), cancellationToken: cancellationToken).ConfigureAwait(false);
             }
-            catch (OperationCanceledException)
+            catch (Exception e)
             {
-                return ServiceResult<User?>.Canceled;
+                _exceptionLogger.Log(e);
+                throw;
             }
 
             if (user == null)
             {
-                return new ServiceResult<User?>(null, EErrorCode.NotExistNameIdentifier);
+                return new ServiceResult<User?>(null, EErrorCode.NotExist, nameof(nameIdentifier));
             }
 
             user.LastLoginDate = DateTimeOffset.UtcNow;
             user.LastLoginIp = ip;
-            _dbContext.SaveChanges();
+
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _exceptionLogger.Log(e);
+                throw;
+            }
 
             return ServiceResult<User?>.NoError(user);
         }
@@ -125,14 +151,14 @@ namespace Maladin.Service.Svcs
         /// <inheritdoc/>
         public async Task<ServiceResult<User?>> SignupAsync(string email, string passwordHash, string name, string ip, CancellationToken cancellationToken = default)
         {
-            if (_dbContext.Users.Any(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase)))
+            if (_dbContext.IsUserEmailExist(email))
             {
-                return new ServiceResult<User?>(null, EErrorCode.DuplicateEmail);
+                return new ServiceResult<User?>(null, EErrorCode.DuplicateUnique, nameof(email));
             }
 
-            if (_dbContext.Users.Any(u => u.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            if (_dbContext.IsUserNameExist(name))
             {
-                return new ServiceResult<User?>(null, EErrorCode.DuplicateName);
+                return new ServiceResult<User?>(null, EErrorCode.DuplicateUnique, nameof(name));
             }
 
             int roleId = _dbContext.Roles.First(r => r.Priority == _dbContext.Roles.Min(rr => rr.Priority)).Id;
@@ -154,20 +180,19 @@ namespace Maladin.Service.Svcs
             };
 
             _dbContext.Users.Add(user);
+
             try
             {
                 await _dbContext.SaveChangesAsync(cancellationToken);
             }
-            catch (OperationCanceledException)
+            catch (Exception e)
             {
-                return ServiceResult<User?>.Canceled;
-            }
-            catch (DbUpdateException)
-            {
-                return ServiceResult<User?>.UpdateError;
+                _exceptionLogger.Log(e);
+                throw;
             }
 
             //TODO: 이메일 인증 발송
+            throw new NotImplementedException();
 
             return ServiceResult<User?>.NoError(user);
         }
@@ -175,24 +200,24 @@ namespace Maladin.Service.Svcs
         /// <inheritdoc/>
         public async Task<ServiceResult<User?>> SignupAsync(int providerId, string nameIdentifier, string email, string name, string ip, CancellationToken cancellationToken = default)
         {
-            if (!_dbContext.OAuthProviders.Any(p => p.Id == providerId))
+            if (!_dbContext.IsExist<OAuthProvider>(providerId))
             {
-                return new ServiceResult<User?>(null, EErrorCode.NotExistOAuthProvider);
+                return new ServiceResult<User?>(null, EErrorCode.NotExist, nameof(providerId));
             }
 
-            if (_dbContext.Users.Any(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase)))
+            if (_dbContext.IsUserEmailExist(email))
             {
-                return new ServiceResult<User?>(null, EErrorCode.DuplicateEmail);
+                return new ServiceResult<User?>(null, EErrorCode.DuplicateUnique, nameof(email));
             }
 
-            if (_dbContext.Users.Any(u => u.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            if (_dbContext.IsUserNameExist(name))
             {
-                return new ServiceResult<User?>(null, EErrorCode.DuplicateName);
+                return new ServiceResult<User?>(null, EErrorCode.DuplicateUnique, nameof(name));
             }
 
-            if (_dbContext.OAuthIds.Any(o => o.ProviderId == providerId && o.NameIdentifier == nameIdentifier))
+            if (_dbContext.IsNameIdentifierDuplicate(providerId, nameIdentifier))
             {
-                return new ServiceResult<User?>(null, EErrorCode.DuplicateNameIdentifier);
+                return new ServiceResult<User?>(null, EErrorCode.DuplicateUnique, nameof(nameIdentifier));
             }
 
             int roleId = _dbContext.Roles.First(r => r.Priority == _dbContext.Roles.Min(rr => rr.Priority)).Id;
@@ -217,76 +242,285 @@ namespace Maladin.Service.Svcs
             {
                 await _dbContext.SaveChangesAsync(cancellationToken);
             }
-            catch (OperationCanceledException)
+            catch (Exception e)
             {
-                return ServiceResult<User?>.Canceled;
-            }
-            catch (DbUpdateException)
-            {
-                return ServiceResult<User?>.UpdateError;
+                _exceptionLogger.Log(e);
+                throw;
             }
 
             return ServiceResult<User?>.NoError(user);
         }
 
         /// <inheritdoc/>
-        public Task<ServiceResult> WithdrawAsync(int userId, CancellationToken cancellationToken = default)
+        public async Task<ServiceResult> WithdrawAsync(int userId, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            User? user =_dbContext.Find<User>(userId);
+
+            if (user == null)
+            {
+                return new ServiceResult(EErrorCode.NotExist, nameof(userId));
+            }
+
+            _dbContext.Remove(user);
+
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _exceptionLogger.Log(e);
+                throw;
+            }
+
+            return ServiceResult.NoError;
         }
 
         /// <inheritdoc/>
-        public Task<ServiceResult<bool>> VerifyEmailAsync(string email, string code, CancellationToken cancellationToken = default)
+        public async Task<ServiceResult<bool>> VerifyEmailAsync(string email, string code, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            User? user;
+            try
+            {
+                user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == email, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _exceptionLogger.Log(e);
+                throw;
+            }
+
+            if (user == null)
+            {
+                return new ServiceResult<bool>(false, EErrorCode.NotExist, nameof(email));
+            }
+
+            if (user.IsEmailAuthenticated)
+            {
+                return ServiceResult<bool>.NoError(true);
+            }
+
+            if (_cache.GetString(email) == code)
+            {
+                user.IsEmailAuthenticated = true;
+                try
+                {
+                    await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    _exceptionLogger.Log(e);
+                    throw;
+                }
+
+                return ServiceResult<bool>.NoError(true);
+            }
+            else
+            {
+                return ServiceResult<bool>.NoError(false);
+            }
         }
 
         /// <inheritdoc/>
-        public Task<ServiceResult> UpdateNameAsync(int userId, string name, string ip, CancellationToken cancellationToken = default)
+        public async Task<ServiceResult> UpdateNameAsync(int userId, string name, string ip, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            User? user = _dbContext.Find<User>(userId);
+
+            if (user == null)
+            {
+                return new ServiceResult(EErrorCode.NotExist, nameof(userId));
+            }
+
+            user.Name = name;
+            user.UpdateAt = DateTimeOffset.UtcNow;
+            user.UpdateIp = ip;
+
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _exceptionLogger.Log(e);
+                throw;
+            }
+
+            return ServiceResult.NoError;
         }
 
         /// <inheritdoc/>
-        public Task<ServiceResult> UpdateEmailAsync(int userId, string email, string ip, CancellationToken cancellationToken = default)
+        public async Task<ServiceResult> UpdateEmailAsync(int userId, string email, string ip, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            User? user = _dbContext.Find<User>(userId);
+
+            if (user == null)
+            {
+                return new ServiceResult(EErrorCode.NotExist, nameof(userId));
+            }
+
+            user.Email = email;
+            user.UpdateAt = DateTimeOffset.UtcNow;
+            user.UpdateIp = ip;
+
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _exceptionLogger.Log(e);
+                throw;
+            }
+
+            return ServiceResult.NoError;
         }
 
         /// <inheritdoc/>
-        public Task<ServiceResult> UpdatePasswordAsync(int userId, string password, string ip, CancellationToken cancellationToken = default)
+        public async Task<ServiceResult> UpdatePasswordAsync(int userId, string passwordHash, string ip, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            User? user = _dbContext.Find<User>(userId);
+
+            if (user == null)
+            {
+                return new ServiceResult(EErrorCode.NotExist, nameof(userId));
+            }
+
+            user.PasswordHash = passwordHash;
+            user.UpdateAt = DateTimeOffset.UtcNow;
+            user.UpdateIp = ip;
+
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _exceptionLogger.Log(e);
+                throw;
+            }
+
+            return ServiceResult.NoError;
         }
 
         /// <inheritdoc/>
-        public Task<ServiceResult> LinkOAuthAsync(int userId, int providerId, string nameIdentifier, CancellationToken cancellationToken = default)
+        public async Task<ServiceResult> AddOAuthAsync(int userId, int providerId, string nameIdentifier, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if (!_dbContext.IsExist<OAuthProvider>(providerId))
+            {
+                return new ServiceResult(EErrorCode.NotExist, nameof(providerId));
+            }
+
+            if (_dbContext.IsNameIdentifierDuplicate(providerId, nameIdentifier))
+            {
+                return new ServiceResult(EErrorCode.DuplicateUnique, nameof(nameIdentifier));
+            }
+
+            User? user = _dbContext.Find<User>(userId);
+
+            if (user == null)
+            {
+                return new ServiceResult(EErrorCode.NotExist, nameof(userId));
+            }
+
+            OAuthId oAuthId = new()
+            {
+                UserId = userId,
+                ProviderId = providerId,
+                NameIdentifier = nameIdentifier,
+            };
+
+            _dbContext.Add(oAuthId);
+
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _exceptionLogger.Log(e);
+                throw;
+            }
+
+            return ServiceResult.NoError;
         }
 
         /// <inheritdoc/>
-        public Task<ServiceResult> UnlinkOAuthAsync(int userId, int providerId, CancellationToken cancellationToken = default)
+        public async Task<ServiceResult> RemoveOAuthAsync(int userId, int providerId, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            OAuthId? oAuthId = await _dbContext.OAuthIds.FirstOrDefaultAsync(o => o.UserId == userId && o.ProviderId == providerId, cancellationToken).ConfigureAwait(false);
+            if (oAuthId == null)
+            {
+                return new ServiceResult(EErrorCode.NotExist, nameof(providerId));
+            }
+
+            _dbContext.OAuthIds.Remove(oAuthId);
+
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _exceptionLogger.Log(e);
+                throw;
+            }
+
+            return ServiceResult.NoError;
         }
 
         /// <inheritdoc/>
-        public Task<ServiceResult> AddProviderAsync(string providerName, CancellationToken cancellationToken = default)
+        public async Task<ServiceResult> AddProviderAsync(string providerName, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            OAuthProvider provider = new()
+            {
+                Name = providerName
+            };
+
+            _dbContext.OAuthProviders.Add(provider);
+
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _exceptionLogger.Log(e);
+                throw;
+            }
+
+            return ServiceResult.NoError;
         }
 
         /// <inheritdoc/>
-        public Task<ServiceResult> RemoveProviderAsync(int providerId, CancellationToken cancellationToken = default)
+        public async Task<ServiceResult> RemoveProviderAsync(int providerId, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            OAuthProvider? provider = _dbContext.Find<OAuthProvider>(providerId);
+
+            if (provider == null)
+            {
+                return new ServiceResult(EErrorCode.NotExist, nameof(providerId));
+            }
+
+            _dbContext.OAuthProviders.Remove(provider);
+
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _exceptionLogger.Log(e);
+                throw;
+            }
+
+            return ServiceResult.NoError;
         }
 
         /// <inheritdoc/>
-        public Task<ServiceResult<IEnumerable<OAuthProvider>>> GetProvidersAsync(CancellationToken cancellationToken = default)
+        public ServiceResult<IEnumerable<OAuthProvider>> GetProviders()
         {
-            throw new NotImplementedException();
+            var result = _dbContext.OAuthProviders.AsNoTracking().AsEnumerable();
+            return new ServiceResult<IEnumerable<OAuthProvider>>(result, EErrorCode.NoError);
         }
     }
 }

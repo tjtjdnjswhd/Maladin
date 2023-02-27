@@ -1,4 +1,6 @@
-﻿using Maladin.Data.Models;
+﻿using Microsoft.EntityFrameworkCore;
+
+using Maladin.Data.Models;
 using Maladin.Service.Models;
 
 namespace Maladin.Service.Interfaces
@@ -10,6 +12,8 @@ namespace Maladin.Service.Interfaces
         /// </summary>
         /// <param name="bookContext"></param>
         /// <returns></returns>
+        /// <exception cref="OperationCanceledException"></exception>
+        /// <exception cref="DbUpdateException"></exception>
         public Task<ServiceResult<Book>> AddBookAsync(BookContext bookContext);
 
         /// <summary>
@@ -17,6 +21,7 @@ namespace Maladin.Service.Interfaces
         /// </summary>
         /// <param name="bookId"></param>
         /// <returns></returns>
+        /// <exception cref="OperationCanceledException"></exception>
         public Task<ServiceResult<Book?>> GetBookOrNullAsync(int bookId);
 
         /// <summary>
@@ -24,6 +29,8 @@ namespace Maladin.Service.Interfaces
         /// </summary>
         /// <param name="bookContext"></param>
         /// <returns></returns>
+        /// <exception cref="OperationCanceledException"></exception>
+        /// <exception cref="DbUpdateException"></exception>
         public Task<ServiceResult<Book>> UpdateBookAsync(int bookId, BookContext bookContext);
 
         /// <summary>
@@ -31,6 +38,8 @@ namespace Maladin.Service.Interfaces
         /// </summary>
         /// <param name="bookId"></param>
         /// <returns></returns>
+        /// <exception cref="OperationCanceledException"></exception>
+        /// <exception cref="DbUpdateException"></exception>
         public Task<ServiceResult> RemoveBookAsync(int bookId);
     }
 }
