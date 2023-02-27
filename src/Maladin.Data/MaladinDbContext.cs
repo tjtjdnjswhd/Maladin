@@ -36,11 +36,11 @@ namespace Maladin.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.UseCollation("SQL_Latin1_General_CP1_CI_AS");
 
             modelBuilder.Entity<User>(builder =>
             {
                 builder.ToTable("User", tb => tb.HasCheckConstraint("CTK_User_PasswordHash_IsOAuth", "[IsOAuth] = 1 OR ([PasswordHash] <> null)"));
-                builder.HasQueryFilter(u => u.IsEmailAuthenticated);
 
                 builder.HasIndex(nameof(User.Email));
                 builder.HasIndex(nameof(User.Name));
