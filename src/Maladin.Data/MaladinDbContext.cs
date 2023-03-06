@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maladin.Data
 {
-    public sealed class MaladinDbContext : DbContext
+    public abstract class MaladinDbContext : DbContext
     {
         public DbSet<User> Users { get; set; }
         public DbSet<OAuthId> OAuthIds { get; set; }
@@ -17,7 +17,7 @@ namespace Maladin.Data
 
         public DbSet<Order> Orders { get; set; }
         public DbSet<Delivery> Deliveries { get; set; }
-        public DbSet<IamportPayment> IamportPayments { get; set; }
+        public DbSet<PortonePayment> PortonePayments { get; set; }
         public DbSet<OrderBook> OrderBooks { get; set; }
 
         public DbSet<Book> Books { get; set; }
@@ -29,7 +29,7 @@ namespace Maladin.Data
         public DbSet<Author> Authors { get; set; }
         public DbSet<Translator> Translators { get; set; }
 
-        public MaladinDbContext(DbContextOptions<MaladinDbContext> options) : base(options)
+        public MaladinDbContext(DbContextOptions options) : base(options)
         {
         }
 
@@ -136,7 +136,7 @@ namespace Maladin.Data
                 builder.Property(d => d.Name).IsUnicode().HasMaxLength(255);
             });
 
-            modelBuilder.Entity<IamportPayment>(builder =>
+            modelBuilder.Entity<PortonePayment>(builder =>
             {
                 builder.ToTable("IamportPayment", tb =>
                 {
@@ -144,9 +144,8 @@ namespace Maladin.Data
                 }).HasIndex(i => i.ImpUid).IsUnique();
 
                 builder.Property(i => i.ImpUid).HasMaxLength(255);
-                builder.Property(i => i.PgProvider).HasMaxLength(255);
-
-                builder.HasOne(i => i.Order).WithOne(o => o.Payment).HasForeignKey(typeof(IamportPayment), nameof(IamportPayment.OrderId));
+                    
+                builder.HasOne(i => i.Order).WithOne(o => o.Payment).HasForeignKey(typeof(PortonePayment), nameof(PortonePayment.OrderId));
             });
 
             modelBuilder.Entity<OrderBook>(builder =>
@@ -244,5 +243,7 @@ namespace Maladin.Data
                 builder.Property(a => a.Introduce).IsUnicode();
             });
         }
+
+        public abstract bool TryConsumePoint(int userId, int pointAmount);
     }
 }

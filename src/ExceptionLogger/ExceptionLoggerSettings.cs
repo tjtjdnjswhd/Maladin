@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace Utils
+namespace ExceptionLogger
 {
     /// <summary>
     /// <seealso cref="IExceptionLogger{T}"/>의 설정

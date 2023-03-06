@@ -50,7 +50,7 @@ namespace Maladin.Service.Interfaces
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ServiceResult<IEnumerable<Point>> GetPointsDetail(int userId);
+        public ServiceResult<IAsyncEnumerable<Point>> GetPointsDetail(int userId);
 
         /// <summary>
         /// 해당 유저의 배송 주소를 추가합니다
@@ -78,7 +78,7 @@ namespace Maladin.Service.Interfaces
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ServiceResult<IEnumerable<UserAddress>> GetAddresses(int userId);
+        public ServiceResult<IAsyncEnumerable<UserAddress>> GetAddresses(int userId);
 
         /// <summary>
         /// 해당 주소를 삭제합니다
@@ -94,6 +94,6 @@ namespace Maladin.Service.Interfaces
         /// 모든 <see cref="Membership"/> 개체를 반환합니다
         /// </summary>
         /// <returns></returns>
-        public ServiceResult<IEnumerable<Membership>> GetMemberships();
+        public ServiceResult<IAsyncEnumerable<Membership>> GetMemberships();
     }
 }

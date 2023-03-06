@@ -6,7 +6,7 @@ namespace Maladin.Data.Models
     {
         public required int UserId { get; set; }
         public int? DeliveryId { get; set; }
-        public int? UsedPoint { get; set; }
+        public required int? UsedPoint { get; set; }
         public required DateTimeOffset OrderedAt { get; set; }
         public required string Address { get; set; }
         public required string Postcode { get; set; }
@@ -21,6 +21,6 @@ namespace Maladin.Data.Models
         public User User { get; set; }
         public Delivery Delivery { get; set; }
         public List<OrderBook> OrderBooks { get; set; }
-        public IamportPayment Payment { get; set; }
+        public PortonePayment Payment { get; set; }
     }
 }

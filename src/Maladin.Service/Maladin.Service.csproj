@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ExceptionLogger\ExceptionLogger.csproj" />
     <ProjectReference Include="..\Maladin.Data\Maladin.Data.csproj" />
-    <ProjectReference Include="..\Utils\Utils.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -16,13 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Settings\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="mailkit" Version="3.5.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
   </ItemGroup>
 
 </Project>

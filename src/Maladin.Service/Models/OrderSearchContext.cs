@@ -6,32 +6,35 @@ namespace Maladin.Service.Models
 {
     public sealed class OrderSearchContext
     {
-        public OrderSearchContext(int? userIdOrNull, EOrderState deliveryState, EOrderSearchTarget searchTarget, Regex filter, DateTimeOffset start, DateTimeOffset end, int skip, int take)
+        public OrderSearchContext(int? userIdOrNull, EOrderState? deliveryStateOrNull, EOrderSearchTarget target, Regex filter, DateTimeOffset start, DateTimeOffset end, int minAmount, int maxAmount, int skip, int take)
         {
             UserIdOrNull = userIdOrNull;
-            DeliveryState = deliveryState;
-            Target = searchTarget;
-            Filter = filter;
+            DeliveryStateOrNull = deliveryStateOrNull;
+            FilterTarget = target;
+            TextFilter = filter;
             Start = start;
             End = end;
+            MinAmount = minAmount;
+            MaxAmount = maxAmount;
             Skip = skip;
             Take = take;
         }
 
         public int? UserIdOrNull { get; init; }
-        public EOrderState DeliveryState { get; init; }
-        public EOrderSearchTarget Target { get; init; }
-        public Regex Filter { get; init; }
+        public EOrderState? DeliveryStateOrNull { get; init; }
+        public EOrderSearchTarget FilterTarget { get; init; }
+        public Regex TextFilter { get; init; }
         public DateTimeOffset Start { get; init; }
         public DateTimeOffset End { get; init; }
+        public int MinAmount { get; init; }
+        public int MaxAmount { get; init; }
         public int Skip { get; init; }
         public int Take { get; init; }
     }
 
     public enum EOrderSearchTarget
     {
-        OrderId,
-        BookName,
-        ReciverName
+        BookTitle,
+        ReceiverName
     }
 }

@@ -1,6 +1,4 @@
-﻿using Maladin.Data.Models;
-
-namespace Maladin.Service.Models
+﻿namespace Maladin.Service.Models
 {
     public sealed class OrderContext
     {

@@ -37,8 +37,7 @@ namespace Maladin.Service.Interfaces
         /// </summary>
         /// <param name="searchContext"></param>
         /// <returns></returns>
-        /// <exception cref="OperationCanceledException"></exception>
-        public Task<ServiceResult<IEnumerable<BookDisplay>>> GetBookDisplaysAsync(BookDisplaySearchContext searchContext);
+        public ServiceResult<IAsyncEnumerable<BookDisplay>> GetBookDisplays(BookDisplaySearchContext searchContext);
 
         /// <summary>
         /// 해당 <see cref="BookDisplay"/> 개체를 변경합니다

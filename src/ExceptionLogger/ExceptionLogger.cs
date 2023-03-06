@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Utils
+namespace ExceptionLogger
 {
     public class ExceptionLogger<T> : IExceptionLogger<T> where T : class
     {

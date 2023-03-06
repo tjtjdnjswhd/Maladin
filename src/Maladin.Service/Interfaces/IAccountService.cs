@@ -180,6 +180,6 @@ namespace Maladin.Service.Interfaces
         /// 존재하는 <see cref="OAuthProvider"/> 개체들을 반환합니다
         /// </summary>
         /// <returns></returns>
-        public ServiceResult<IEnumerable<OAuthProvider>> GetProviders();
+        public ServiceResult<IAsyncEnumerable<OAuthProvider>> GetProviders();
     }
 }

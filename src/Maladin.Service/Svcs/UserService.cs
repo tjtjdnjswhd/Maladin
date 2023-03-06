@@ -1,4 +1,6 @@
-﻿using Maladin.Data;
+﻿using ExceptionLogger;
+
+using Maladin.Data;
 using Maladin.Data.Models;
 using Maladin.Service.Extensions;
 using Maladin.Service.Interfaces;
@@ -7,7 +9,7 @@ using Maladin.Service.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-using Utils;
+using System.Diagnostics;
 
 namespace Maladin.Service.Svcs
 {
@@ -30,10 +32,11 @@ namespace Maladin.Service.Svcs
             User? user;
             try
             {
-                user = await _dbContext.FindAsync<User>(new object[] { userId }, cancellationToken).ConfigureAwait(false);
+                user = await _dbContext.FindAsync<User>(new object[] { userId }, cancellationToken: cancellationToken).ConfigureAwait(false);
             }
             catch (Exception e)
             {
+                Debug.Assert(e is OperationCanceledException, "Unexpected exception");
                 _exceptionLogger.Log(e);
                 throw;
             }
@@ -52,6 +55,7 @@ namespace Maladin.Service.Svcs
             }
             catch (Exception e)
             {
+                Debug.Assert(e is OperationCanceledException, "Unexpected exception");
                 _exceptionLogger.Log(e);
                 throw;
             }
@@ -70,6 +74,7 @@ namespace Maladin.Service.Svcs
             }
             catch (Exception e)
             {
+                Debug.Assert(e is OperationCanceledException, "Unexpected exception");
                 _exceptionLogger.Log(e);
                 throw;
             }
@@ -88,6 +93,7 @@ namespace Maladin.Service.Svcs
             }
             catch (Exception e)
             {
+                Debug.Assert(e is OperationCanceledException, "Unexpected exception");
                 _exceptionLogger.Log(e);
                 throw;
             }
@@ -100,6 +106,7 @@ namespace Maladin.Service.Svcs
             }
             catch (Exception e)
             {
+                Debug.Assert(e is OperationCanceledException or DbUpdateException, "Unexpected exception");
                 _exceptionLogger.Log(e);
                 throw;
             }
@@ -122,21 +129,22 @@ namespace Maladin.Service.Svcs
             }
             catch (Exception e)
             {
+                Debug.Assert(e is OperationCanceledException, "Unexpected exception");
                 _exceptionLogger.Log(e);
                 throw;
             }
         }
 
         /// <inheritdoc/>
-        public ServiceResult<IEnumerable<Point>> GetPointsDetail(int userId)
+        public ServiceResult<IAsyncEnumerable<Point>> GetPointsDetail(int userId)
         {
             if (!_dbContext.IsExist<User>(userId))
             {
-                return new ServiceResult<IEnumerable<Point>>(Enumerable.Empty<Point>(), EErrorCode.NotExist, nameof(userId));
+                return new ServiceResult<IAsyncEnumerable<Point>>(null, EErrorCode.NotExist, nameof(userId));
             }
 
-            IEnumerable<Point> points = _dbContext.Points.Where(p => p.UserId == userId && p.ExpireAt.CompareTo(DateTimeOffset.Now) > 0).AsNoTracking().AsEnumerable();
-            return ServiceResult<IEnumerable<Point>>.NoError(points);
+            var points = _dbContext.Points.Where(p => p.UserId == userId && p.ExpireAt.CompareTo(DateTimeOffset.Now) > 0).AsNoTracking().AsAsyncEnumerable();
+            return ServiceResult<IAsyncEnumerable<Point>>.NoError(points);
         }
 
         /// <inheritdoc/>
@@ -170,6 +178,7 @@ namespace Maladin.Service.Svcs
             }
             catch (Exception e)
             {
+                Debug.Assert(e is OperationCanceledException or DbUpdateException, "Unexpected exception");
                 _exceptionLogger.Log(e);
                 throw;
             }
@@ -192,6 +201,7 @@ namespace Maladin.Service.Svcs
             }
             catch (Exception e)
             {
+                Debug.Assert(e is OperationCanceledException, "Unexpected exception");
                 _exceptionLogger.Log(e);
                 throw;
             }
@@ -200,15 +210,15 @@ namespace Maladin.Service.Svcs
         }
 
         /// <inheritdoc/>
-        public ServiceResult<IEnumerable<UserAddress>> GetAddresses(int userId)
+        public ServiceResult<IAsyncEnumerable<UserAddress>> GetAddresses(int userId)
         {
             if (!_dbContext.IsExist<User>(userId))
             {
-                return new ServiceResult<IEnumerable<UserAddress>>(null, EErrorCode.NotExist, nameof(userId));
+                return new ServiceResult<IAsyncEnumerable<UserAddress>>(null, EErrorCode.NotExist, nameof(userId));
             }
 
-            var result = _dbContext.UserAddresses.Where(a => a.UserId == userId).AsNoTracking().AsEnumerable();
-            return ServiceResult<IEnumerable<UserAddress>>.NoError(result);
+            var result = _dbContext.UserAddresses.Where(a => a.UserId == userId).AsNoTracking().AsAsyncEnumerable();
+            return ServiceResult<IAsyncEnumerable<UserAddress>>.NoError(result);
         }
 
         /// <inheritdoc/>
@@ -227,6 +237,7 @@ namespace Maladin.Service.Svcs
             }
             catch (Exception e)
             {
+                Debug.Assert(e is OperationCanceledException or DbUpdateException, "Unexpected exception");
                 _exceptionLogger.Log(e);
                 throw;
             }
@@ -235,10 +246,10 @@ namespace Maladin.Service.Svcs
         }
 
         /// <inheritdoc/>
-        public ServiceResult<IEnumerable<Membership>> GetMemberships()
+        public ServiceResult<IAsyncEnumerable<Membership>> GetMemberships()
         {
-            IEnumerable<Membership> memberships = _dbContext.Memberships.AsEnumerable();
-            return ServiceResult<IEnumerable<Membership>>.NoError(memberships);
+            IAsyncEnumerable<Membership> memberships = _dbContext.Memberships.AsNoTracking().AsAsyncEnumerable();
+            return ServiceResult<IAsyncEnumerable<Membership>>.NoError(memberships);
         }
     }
 }

@@ -1,28 +1,10 @@
 ﻿using Maladin.Data;
 using Maladin.Data.Models;
 
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
-
-using System.Linq.Expressions;
-
 namespace Maladin.Service.Extensions
 {
     public static class MaladinDbContextExtensions
     {
-        public static bool ConsumePoint(this MaladinDbContext dbContext, int userId, int pointAmount)
-        {
-            SqlParameter result = new()
-            {
-                ParameterName = "result",
-                Direction = System.Data.ParameterDirection.Output,
-                SqlDbType = System.Data.SqlDbType.Bit
-            };
-
-            dbContext.Database.ExecuteSqlRaw("usp_ConsumePoint @userId, @pointAmount, @result OUTPUT", new SqlParameter("@userId", userId), new SqlParameter("@pointAmount", pointAmount), result);
-            return (bool)result.Value;
-        }
-
         public static bool IsUserNameExist(this MaladinDbContext dbContext, string userName)
         {
             return dbContext.Users.Any(u => u.Name == userName);
@@ -46,6 +28,16 @@ namespace Maladin.Service.Extensions
         public static bool IsNameIdentifierDuplicate(this MaladinDbContext dbContext, int providerId, string nameIdentifier)
         {
             return dbContext.OAuthIds.Any(o => o.ProviderId == providerId && o.NameIdentifier == nameIdentifier);
+        }
+
+        public static int GetOrderTotalAmount(this MaladinDbContext dbContext, int orderId)
+        {
+            return dbContext.Orders.Where(o => o.Id == orderId).Select(order => order.OrderBooks.Sum(orderBook => orderBook.OrderQty * orderBook.PricePerItem)).SingleOrDefault();
+        }
+
+        public static int GetOrderCurrentAmount(this MaladinDbContext dbContext, int orderId)
+        {
+            return dbContext.Orders.Where(o => o.Id == orderId).Select(order => order.OrderBooks.Sum(orderBook => (orderBook.OrderQty - orderBook.RefundQty.GetValueOrDefault(0)) * orderBook.PricePerItem)).SingleOrDefault();
         }
     }
 }

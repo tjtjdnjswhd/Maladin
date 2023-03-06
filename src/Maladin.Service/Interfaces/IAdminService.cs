@@ -22,7 +22,7 @@ namespace Maladin.Service.Interfaces
         /// </summary>
         /// <returns></returns>
         /// <exception cref="OperationCanceledException"></exception>
-        public Task<ServiceResult<IEnumerable<Role>>> GetRolesAsync();
+        public ServiceResult<IAsyncEnumerable<Role>> GetRoles();
 
         /// <summary>
         /// <see cref="User.Role"/>을 변경합니다

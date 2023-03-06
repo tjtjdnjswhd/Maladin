@@ -31,43 +31,8 @@ namespace Maladin.Service.Interfaces
         /// <paramref name="searchContext"/>에 해당하는 <see cref="Order"/> 개체들을 반환합니다
         /// </summary>
         /// <param name="searchContext"></param>
-        /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        /// <exception cref="OperationCanceledException"></exception>
-        public Task<ServiceResult<IEnumerable<Order>>> GetOrdersAsync(OrderSearchContext searchContext, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// 해당 <see cref="Order"/>와 결제 정보를 검증 후 저장된 결제 정보를 반환합니다
-        /// </summary>
-        /// <param name="orderId"></param>
-        /// <param name="impUid"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        /// <exception cref="OperationCanceledException"></exception>
-        /// <exception cref="DbUpdateException"></exception>
-        public Task<ServiceResult<IamportPayment?>> TryAddPaymentAsync(int orderId, string impUid, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// 해당 <see cref="Order"/>를 모두 환불합니다
-        /// </summary>
-        /// <param name="orderId"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        /// <exception cref="OperationCanceledException"></exception>
-        /// <exception cref="DbUpdateException"></exception>
-        public Task<ServiceResult> RefundAllAsync(int orderId, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// 해당 <see cref="Order"/>의 일부를 환불합니다
-        /// </summary>
-        /// <param name="orderId"></param>
-        /// <param name="refundQtyByBookId"></param>
-        /// <param name="isPointFirstRefund"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        /// <exception cref="OperationCanceledException"></exception>
-        /// <exception cref="DbUpdateException"></exception>
-        public Task<ServiceResult> RefundPartialAsync(int orderId, Dictionary<int, int> refundQtyByBookId, bool isPointFirstRefund, CancellationToken cancellationToken = default);
+        public ServiceResult<IAsyncEnumerable<Order>> GetOrders(OrderSearchContext searchContext);
 
         /// <summary>
         /// 해당 <see cref="Order.Message"/>를 변경합니다.
