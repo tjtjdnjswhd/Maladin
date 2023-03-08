@@ -1,5 +1,4 @@
 ﻿using Maladin.Service.Models;
-
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
@@ -7,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace Maladin.Service.Converters
 {
-    public class PortonePaymentResponseConverter : JsonConverter<PortonePaymentResponse>
+    internal class PortonePaymentResponseConverter : JsonConverter<PortonePaymentResponse>
     {
         public override PortonePaymentResponse? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -28,10 +27,10 @@ namespace Maladin.Service.Converters
             throw new NotImplementedException();
         }
 
-        private static void DeserializeProperty<T>(ref Utf8JsonReader reader, T obj)
+        private static void DeserializeProperty<T>(ref Utf8JsonReader reader, T obj) where T : class
         {
             Debug.Assert(reader.TokenType is JsonTokenType.StartObject or JsonTokenType.PropertyName);
-            Dictionary<string, PropertyInfo> propertyInfoByJsonPropertyName = obj!.GetType().GetProperties()
+            Dictionary<string, PropertyInfo> propertyInfoByJsonPropertyName = obj.GetType().GetProperties()
                 .ToDictionary(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name ?? p.Name, p => p);
 
             foreach (string name in propertyInfoByJsonPropertyName.Keys)
@@ -48,10 +47,11 @@ namespace Maladin.Service.Converters
                 }
 
                 PropertyInfo propertyInfo = propertyInfoByJsonPropertyName[name];
+                Type propertyType = propertyInfo.PropertyType;
 
-                if (propertyInfo.PropertyType.IsClass && propertyInfo.PropertyType != typeof(string) && !propertyInfo.PropertyType.IsArray)
+                if (propertyType.IsClass && propertyType != typeof(string) && !propertyType.IsArray)
                 {
-                    DeserializeProperty(ref reader, propertyInfo.GetValue(obj));
+                    DeserializeProperty(ref reader, propertyInfo.GetValue(obj)!);
                     continue;
                 }
 
@@ -60,40 +60,43 @@ namespace Maladin.Service.Converters
                     reader.Read();
                 }
 
-                object? value = ParseValue(ref reader, propertyInfo.PropertyType);
+                object? value = ParseValue(ref reader, propertyType);
 
-                if (propertyInfo.PropertyType.IsArray)
+                propertyInfo.SetValue(obj, value);
+
+                if (!propertyType.IsArray)
                 {
-                    propertyInfo.SetValue(obj, value, null);
-                }
-                else
-                {
-                    propertyInfo.SetValue(obj, value);
                     reader.Read();
                 }
-
             }
         }
 
         private static object? ParseValue(ref Utf8JsonReader reader, Type type)
         {
-            if (type.IsEnum)
+            Debug.Assert(IsPointValues(ref reader));
+
+            Type target = Nullable.GetUnderlyingType(type) ?? type;
+
+            if (target.IsEnum)
             {
-                return reader.GetString();
+                Enum.TryParse(target, reader.GetString(), true, out object? result);
+                return result;
             }
-            else if (type.IsArray)
+            else if (target.IsArray)
             {
                 Debug.Assert(reader.TokenType == JsonTokenType.StartArray);
                 reader.Read();
-                Type elementType = type.GetElementType()!;
+
+                Type elementType = target.GetElementType()!;
                 System.Collections.ArrayList array = new();
 
                 while (reader.TokenType != JsonTokenType.EndArray)
                 {
                     object element;
+
                     if (elementType == typeof(string))
                     {
-                        element = elementType.GetConstructor(new Type[] { typeof(char[]) })!.Invoke(new object[] { reader.GetString()!.ToCharArray() });
+                        element = reader.GetString()!;
                     }
                     else if (elementType.IsClass)
                     {
@@ -113,59 +116,59 @@ namespace Maladin.Service.Converters
 
                 return array.ToArray(elementType);
             }
-            else if (type == typeof(sbyte))
+            else if (target == typeof(sbyte))
             {
                 return reader.GetSByte();
             }
-            else if (type == typeof(byte))
+            else if (target == typeof(byte))
             {
                 return reader.GetByte();
             }
-            else if (type == typeof(bool))
+            else if (target == typeof(bool))
             {
                 return reader.GetBoolean();
             }
-            else if (type == typeof(char))
+            else if (target == typeof(char))
             {
                 return reader.GetString()![0];
             }
-            else if (type == typeof(string))
+            else if (target == typeof(string))
             {
                 return reader.GetString();
             }
-            else if (type == typeof(float) || type == typeof(double))
+            else if (target == typeof(float) || target == typeof(double))
             {
                 return reader.GetDouble();
             }
-            else if (type == typeof(decimal))
+            else if (target == typeof(decimal))
             {
                 return reader.GetDecimal();
             }
-            else if (type == typeof(short))
+            else if (target == typeof(short))
             {
                 return reader.GetInt16();
             }
-            else if (type == typeof(int))
+            else if (target == typeof(int))
             {
                 return reader.GetInt32();
             }
-            else if (type == typeof(long))
+            else if (target == typeof(long))
             {
                 return reader.GetInt64();
             }
-            else if (type == typeof(ushort))
+            else if (target == typeof(ushort))
             {
                 return reader.GetUInt16();
             }
-            else if (type == typeof(uint))
+            else if (target == typeof(uint))
             {
                 return reader.GetUInt32();
             }
-            else if (type == typeof(ulong))
+            else if (target == typeof(ulong))
             {
                 return reader.GetUInt64();
             }
-            else if (type == typeof(DateTime))
+            else if (target == typeof(DateTime))
             {
                 if (reader.TokenType is JsonTokenType.String)
                 {
@@ -176,7 +179,7 @@ namespace Maladin.Service.Converters
                     return DateTime.FromBinary(reader.GetInt64());
                 }
             }
-            else if (type == typeof(DateTimeOffset))
+            else if (target == typeof(DateTimeOffset))
             {
                 if (reader.TokenType is JsonTokenType.String)
                 {

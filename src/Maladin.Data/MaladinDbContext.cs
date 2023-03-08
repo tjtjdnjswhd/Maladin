@@ -123,7 +123,7 @@ namespace Maladin.Data
                 builder.Property(o => o.ReceiverName).IsUnicode().HasMaxLength(255);
                 builder.Property(o => o.Message).IsUnicode().HasMaxLength(255);
                 builder.Property(o => o.PhoneNumber).HasMaxLength(255);
-                builder.Property(o => o.State).HasConversion<string>();
+                builder.Property(o => o.OrderState).HasConversion<string>();
 
                 builder.HasOne(o => o.User).WithMany(u => u.Orders).HasForeignKey(o => o.UserId);
                 builder.HasOne(o => o.Delivery).WithMany(d => d.Orders).HasForeignKey(o => o.DeliveryId);

@@ -1,8 +1,8 @@
 ﻿namespace Maladin.Service.Models
 {
-    public sealed class BookContext
+    public sealed class BookAddContext
     {
-        public BookContext(string isbn, int stock, int price)
+        public BookAddContext(string isbn, int stock, int price)
         {
             Isbn = isbn;
             Stock = stock;

@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 namespace Maladin.Service.Models
 {
     [JsonConverter(typeof(PortonePaymentResponseConverter))]
-    public class PortonePaymentResponse
+    internal class PortonePaymentResponse
     {
 #pragma warning disable CS8618 // 생성자를 종료할 때 null을 허용하지 않는 필드에 null이 아닌 값을 포함해야 합니다. null 허용으로 선언해 보세요.
         public PortonePaymentResponse()
@@ -34,19 +34,19 @@ namespace Maladin.Service.Models
 
         [JsonRequired]
         [JsonPropertyName("pay_method")]
-        public string PayMethod { get; set; }
+        public EPayMethod? PayMethod { get; set; }
 
         [JsonRequired]
         [JsonPropertyName("channel")]
-        public string Channel { get; set; }
+        public EChannel? Channel { get; set; }
 
         [JsonRequired]
         [JsonPropertyName("pg_provider")]
-        public string PgProvider { get; set; }
+        public EPgProvider? PgProvider { get; set; }
 
         [JsonRequired]
         [JsonPropertyName("emb_pg_provider")]
-        public string? EmpPgProvider { get; set; }
+        public EEmbPgProvider? EmbPgProvider { get; set; }
 
         [JsonRequired]
         [JsonPropertyName("pg_tid")]
@@ -98,7 +98,7 @@ namespace Maladin.Service.Models
 
         [JsonRequired]
         [JsonPropertyName("status")]
-        public string Status { get; set; }
+        public EStatus Status { get; set; }
 
         [JsonRequired]
         [JsonPropertyName("started_at")]
@@ -253,6 +253,53 @@ namespace Maladin.Service.Models
             [JsonRequired]
             [JsonPropertyName("receipt_url")]
             public string? ReceiptUrl { get; set; }
+        }
+
+        public enum EChannel
+        {
+            PC,
+            Mobile,
+            API
+        }
+
+        public enum EPayMethod
+        {
+            Samsung,
+            Card,
+            Trans,
+            VBank,
+            Phone,
+            Cultureland,
+            SmartCulture,
+            BooknLife,
+            HappyMoney,
+            Point,
+            SSGPay,
+            LPay,
+            Payco,
+            KakaoPay,
+            TossPay,
+            NaverPay
+        }
+
+        public enum EPgProvider
+        {
+            Inicis,
+            Nice
+        }
+
+        public enum EEmbPgProvider
+        {
+            Chai,
+            KakaoPay
+        }
+
+        public enum EStatus
+        {
+            Ready,
+            Paid,
+            Cancelled,
+            Failed
         }
     }
 #pragma warning restore CS8618 // 생성자를 종료할 때 null을 허용하지 않는 필드에 null이 아닌 값을 포함해야 합니다. null 허용으로 선언해 보세요.

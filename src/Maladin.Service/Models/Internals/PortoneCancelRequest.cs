@@ -1,8 +1,8 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Maladin.Service.Models
+namespace Maladin.Service.Models.Internals
 {
-    public class PortoneCancelRequest
+    internal class PortoneCancelRequest
     {
         [JsonPropertyName("imp_uid")]
         public required string ImpUid { get; set; }

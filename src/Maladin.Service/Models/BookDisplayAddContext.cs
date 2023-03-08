@@ -1,8 +1,8 @@
 ﻿namespace Maladin.Service.Models
 {
-    public sealed class BookDisplayContext
+    public sealed class BookDisplayAddContext
     {
-        public BookDisplayContext(int bookId, int publisherId, int authorId, int? translatorId, int categoryId, string title, string overview, string paperSize, int pageCount, string coverUrl, DateTimeOffset publishAt)
+        public BookDisplayAddContext(int bookId, int publisherId, int authorId, int? translatorId, int categoryId, string title, string overview, string paperSize, int pageCount, string coverUrl, DateTimeOffset publishAt)
         {
             BookId = bookId;
             PublisherId = publisherId;

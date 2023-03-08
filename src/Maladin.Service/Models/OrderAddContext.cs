@@ -1,12 +1,12 @@
 ﻿namespace Maladin.Service.Models
 {
-    public sealed class OrderContext
+    public sealed class OrderAddContext
     {
-        public OrderContext(int userId, Dictionary<int, int> qtyByBookId, int pointAmount, string address, string postCode, string reciverName, string? message, string phoneNumber)
+        public OrderAddContext(int userId, Dictionary<int, int> qtyByBookId, int amountPoint, string address, string postCode, string reciverName, string? message, string phoneNumber)
         {
             UserId = userId;
             QtyByBookId = qtyByBookId;
-            PointAmount = pointAmount;
+            AmountPoint = amountPoint;
             Address = address;
             PostCode = postCode;
             ReciverName = reciverName;
@@ -16,7 +16,7 @@
 
         public int UserId { get; set; }
         public Dictionary<int, int> QtyByBookId { get; init; }
-        public int PointAmount { get; init; }
+        public int AmountPoint { get; init; }
         public string Address { get; init; }
         public string PostCode { get; init; }
         public string ReciverName { get; init; }

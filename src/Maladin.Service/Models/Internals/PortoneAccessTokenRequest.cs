@@ -1,6 +1,8 @@
-﻿namespace Maladin.Service.Models
+﻿using System.Text.Json.Serialization;
+
+namespace Maladin.Service.Models.Internals
 {
-    public class PortoneAccessTokenRequest
+    internal class PortoneAccessTokenRequest
     {
         public PortoneAccessTokenRequest(string impKey, string impSecret)
         {
@@ -8,7 +10,10 @@
             ImpSecret = impSecret;
         }
 
+        [JsonPropertyName("imp_key")]
         public string ImpKey { get; set; }
+
+        [JsonPropertyName("imp_secret")]
         public string ImpSecret { get; set; }
     }
 }

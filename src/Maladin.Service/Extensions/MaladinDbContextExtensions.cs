@@ -37,7 +37,7 @@ namespace Maladin.Service.Extensions
 
         public static int GetOrderCurrentAmount(this MaladinDbContext dbContext, int orderId)
         {
-            return dbContext.Orders.Where(o => o.Id == orderId).Select(order => order.OrderBooks.Sum(orderBook => (orderBook.OrderQty - orderBook.RefundQty.GetValueOrDefault(0)) * orderBook.PricePerItem)).SingleOrDefault();
+            return dbContext.Orders.Where(o => o.Id == orderId).Select(order => order.OrderBooks.Sum(orderBook => (orderBook.OrderQty - orderBook.CancelQty) * orderBook.PricePerItem)).SingleOrDefault();
         }
     }
 }

@@ -14,7 +14,7 @@ namespace Maladin.Service.Interfaces
         /// <returns></returns>
         /// <exception cref="OperationCanceledException"></exception>
         /// <exception cref="DbUpdateException"></exception>
-        public Task<ServiceResult<Book>> AddBookAsync(BookContext bookContext);
+        public Task<ServiceResult<Book>> AddBookAsync(BookAddContext bookContext);
 
         /// <summary>
         /// 해당 <see cref="Book"/> 개체를 반환합니다
@@ -31,7 +31,7 @@ namespace Maladin.Service.Interfaces
         /// <returns></returns>
         /// <exception cref="OperationCanceledException"></exception>
         /// <exception cref="DbUpdateException"></exception>
-        public Task<ServiceResult<Book>> UpdateBookAsync(int bookId, BookContext bookContext);
+        public Task<ServiceResult<Book>> UpdateBookAsync(int bookId, BookAddContext bookContext);
 
         /// <summary>
         /// 해당 <see cref="Book"/> 개체를 삭제합니다
