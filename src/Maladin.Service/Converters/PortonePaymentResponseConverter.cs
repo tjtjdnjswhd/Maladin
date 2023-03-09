@@ -1,4 +1,4 @@
-﻿using Maladin.Service.Models;
+﻿using Maladin.Service.Models.Internals;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;

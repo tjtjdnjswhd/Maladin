@@ -6,6 +6,7 @@ using Maladin.Data.Models;
 using Maladin.Service.Constants;
 using Maladin.Service.Interfaces;
 using Maladin.Service.Models;
+using Maladin.Service.Models.Enums;
 using Maladin.Service.Models.Internals;
 using Maladin.Service.Settings;
 
@@ -28,9 +29,9 @@ namespace Maladin.Service.Svcs
         private readonly IDistributedCache _cache;
         private readonly ILogger<OrderService> _logger;
         private readonly IExceptionLogger<OrderService> _exceptionLogger;
-        private readonly PortonePaymentSettings _paymentSettings;
+        private readonly PaymentSettings _paymentSettings;
 
-        public OrderService(MaladinDbContext dbContext, IDistributedCache cache, ILogger<OrderService> logger, IExceptionLogger<OrderService> exceptionLogger, IOptions<PortonePaymentSettings> paymentSettings)
+        public OrderService(MaladinDbContext dbContext, IDistributedCache cache, ILogger<OrderService> logger, IExceptionLogger<OrderService> exceptionLogger, IOptions<PaymentSettings> paymentSettings)
         {
             _dbContext = dbContext;
             _cache = cache;
@@ -100,7 +101,7 @@ namespace Maladin.Service.Svcs
                 {
                     Amount = paymentAmount,
                     CancelledAmount = 0,
-                    State = EPaymentState.Prepare
+                    State = EPaymentStatus.Prepare
                 }
             };
 
@@ -177,7 +178,7 @@ namespace Maladin.Service.Svcs
             return ServiceResult<IAsyncEnumerable<Order>>.NoError(result);
         }
 
-        public async Task<ServiceResult<Order?>> UpdateOrderAsync(OrderUpdateContext updateContext, CancellationToken cancellationToken = default)
+        public async Task<ServiceResult<Order?>> UpdateAsync(OrderUpdateContext updateContext, CancellationToken cancellationToken = default)
         {
             if (updateContext.NewAddress == null ^ updateContext.NewPostcode == null)
             {
@@ -231,7 +232,7 @@ namespace Maladin.Service.Svcs
             return new ServiceResult<Order?>(order, EErrorCode.NoError);
         }
 
-        public async Task<ServiceResult<Order?>> SyncOrderPayment(int orderId, string paymentId, CancellationToken cancellationToken = default)
+        public async Task<ServiceResult<Order?>> SyncPayment(int orderId, string paymentId, CancellationToken cancellationToken = default)
         {
             Order? order;
             try
@@ -257,11 +258,11 @@ namespace Maladin.Service.Svcs
 
                 if (paymentResponse.Status == PortonePaymentResponse.EStatus.Paid)
                 {
-                    order.Payment.State = EPaymentState.Paid;
+                    order.Payment.State = EPaymentStatus.Paid;
                 }
                 else if (paymentResponse.Status == PortonePaymentResponse.EStatus.Ready)
                 {
-                    order.Payment.State = EPaymentState.Ready;
+                    order.Payment.State = EPaymentStatus.Ready;
                 }
 
                 await _dbContext.SaveChangesAsync(cancellationToken);
@@ -276,8 +277,13 @@ namespace Maladin.Service.Svcs
             return new ServiceResult<Order?>(order, EErrorCode.NoError);
         }
 
-        public async Task<ServiceResult<bool>> TryCancelAsync(int orderId, Dictionary<int, int> cancelQtyByBookId, CancellationToken cancellationToken = default)
+        public async Task<ServiceResult<bool>> TryCancelAsync(int orderId, Dictionary<int, int> cancelQtyByBookId, VirtualBankRefundInfo? vBankRefundInfo = null, CancellationToken cancellationToken = default)
         {
+            if (!Enum.IsDefined(vBankRefundInfo?.RefundBankCode ?? EBankCode.산업))
+            {
+                return new ServiceResult<bool>(false, EErrorCode.InvalidParameter, nameof(vBankRefundInfo.RefundBankCode));
+            }
+
             Order? order;
             try
             {
@@ -295,7 +301,34 @@ namespace Maladin.Service.Svcs
                 return new ServiceResult<bool>(false, EErrorCode.NotExist, nameof(orderId));
             }
 
-            Dictionary<int, int> qtyByBookId = order.OrderBooks.ToDictionary(ob => ob.BookId, ob => ob.OrderQty - ob.CancelQty);
+            Dictionary<int, int> orderQtyByBookId = order.OrderBooks.ToDictionary(ob => ob.BookId, ob => ob.OrderQty - ob.CancelQty);
+
+            if (!IsCancelQtyValid(orderQtyByBookId, cancelQtyByBookId))
+            {
+                return new ServiceResult<bool>(false, EErrorCode.InvalidParameter, nameof(cancelQtyByBookId));
+            }
+
+            Dictionary<int, int> priceByBookId = order.OrderBooks.ToDictionary(o => o.BookId, o => o.PricePerItem);
+
+            int cancelAmount = 0;
+            foreach (var item in cancelQtyByBookId)
+            {
+                int bookId = item.Key;
+                int cancelQty = item.Value;
+
+                cancelAmount += priceByBookId[bookId] * cancelQty;
+            }
+
+            try
+            {
+                using HttpClient portoneClient = await GetPortoneClientAsync(true, cancellationToken);
+            }
+            catch (Exception e)
+            {
+                Debug.Assert(e is HttpRequestException or OperationCanceledException, "Unexcepted exception");
+                _exceptionLogger.Log(e);
+                throw;
+            }
 
             throw new NotImplementedException();
         }
@@ -308,13 +341,6 @@ namespace Maladin.Service.Svcs
             response.EnsureSuccessStatusCode();
         }
 
-        /// <summary>
-        /// Portone과 연결된 <see cref="HttpClient"/>를 반환합니다
-        /// </summary>
-        /// <param name="setAccessToken"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        /// <exception cref="HttpRequestException"></exception>
         private async Task<HttpClient> GetPortoneClientAsync(bool setAccessToken, CancellationToken cancellationToken = default)
         {
             HttpClient httpClient = new()
@@ -352,5 +378,24 @@ namespace Maladin.Service.Svcs
             return httpClient;
         }
 
+        private static bool IsCancelQtyValid(Dictionary<int, int> orderQtyByBookId, Dictionary<int, int> cancelQtyByBookId)
+        {
+            IEnumerable<int> bookIdIntersect = orderQtyByBookId.Keys.Intersect(cancelQtyByBookId.Keys);
+
+            if (bookIdIntersect.Count() != cancelQtyByBookId.Count)
+            {
+                return false;
+            }
+
+            foreach (var item in cancelQtyByBookId)
+            {
+                if (orderQtyByBookId[item.Key] < item.Value)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
     }
 }

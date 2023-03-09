@@ -1,6 +1,6 @@
 ﻿namespace Maladin.Service.Settings
 {
-    public class PortonePaymentSettings
+    public class PaymentSettings
     {
         public required string ApiKey { get; set; }
         public required string ApiSecret { get; set; }

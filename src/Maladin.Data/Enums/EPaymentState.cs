@@ -1,9 +1,12 @@
 ﻿namespace Maladin.Data.Enums
 {
-    public enum EPaymentState
+    public enum EPaymentStatus
     {
-        Prepare,
         Ready,
-        Paid
+        InProgress,
+        WaitingDeposit,
+        Done,
+        Canceled,
+        PartialCanceled
     }
 }

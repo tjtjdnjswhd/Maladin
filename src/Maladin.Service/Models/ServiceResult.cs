@@ -42,6 +42,7 @@ namespace Maladin.Service.Models
         NeedEmailAuth,
         NotEnoughPoint,
         PointOverAmount,
+        InvalidParameter,
         InvalidPayment,
         DeliveryStarted,
         FailGetPortoneAccessToken

@@ -17,8 +17,11 @@ namespace Maladin.Data
 
         public DbSet<Order> Orders { get; set; }
         public DbSet<Delivery> Deliveries { get; set; }
-        public DbSet<PortonePayment> PortonePayments { get; set; }
         public DbSet<OrderBook> OrderBooks { get; set; }
+
+        public DbSet<TossConfirmPayment> ConfirmPayments { get; set; }
+        public DbSet<TossCancelPayment> CancelPayments { get; set; }
+        public DbSet<VirtualRefund> VirtualRefunds { get; set; }
 
         public DbSet<Book> Books { get; set; }
         public DbSet<BookReview> BookReviews { get; set; }
@@ -136,16 +139,19 @@ namespace Maladin.Data
                 builder.Property(d => d.Name).IsUnicode().HasMaxLength(255);
             });
 
-            modelBuilder.Entity<PortonePayment>(builder =>
+            modelBuilder.Entity<TossConfirmPayment>(builder =>
             {
-                builder.ToTable("IamportPayment", tb =>
-                {
-                    tb.HasCheckConstraint("CK_IamportPayment_Amount", "[Amount] > 0");
-                }).HasIndex(i => i.ImpUid).IsUnique();
 
-                builder.Property(i => i.ImpUid).HasMaxLength(255);
-                    
-                builder.HasOne(i => i.Order).WithOne(o => o.Payment).HasForeignKey(typeof(PortonePayment), nameof(PortonePayment.OrderId));
+            });
+
+            modelBuilder.Entity<TossCancelPayment>(builder =>
+            {
+
+            });
+
+            modelBuilder.Entity<VirtualRefund>(builder =>
+            {
+
             });
 
             modelBuilder.Entity<OrderBook>(builder =>

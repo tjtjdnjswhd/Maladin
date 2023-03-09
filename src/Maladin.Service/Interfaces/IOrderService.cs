@@ -33,10 +33,10 @@ namespace Maladin.Service.Interfaces
         /// <returns></returns>
         public ServiceResult<IAsyncEnumerable<Order>> GetOrders(OrderSearchContext searchContext);
 
-        public Task<ServiceResult<Order?>> UpdateOrderAsync(OrderUpdateContext updateContext, CancellationToken cancellationToken = default);
+        public Task<ServiceResult<Order?>> UpdateAsync(OrderUpdateContext updateContext, CancellationToken cancellationToken = default);
 
-        public Task<ServiceResult<Order?>> SyncOrderPayment(int orderId, string paymentId, CancellationToken cancellationToken = default);
+        public Task<ServiceResult<Order?>> SyncPayment(int orderId, string paymentId, CancellationToken cancellationToken = default);
 
-        public Task<ServiceResult<bool>> TryCancelAsync(int orderId, Dictionary<int, int> cancelQtyByBookId, CancellationToken cancellationToken = default);
+        public Task<ServiceResult<bool>> TryCancelAsync(int orderId, Dictionary<int, int> cancelQtyByBookId, VirtualBankRefundInfo? vBankRefundInfo = null, CancellationToken cancellationToken = default);
     }
 }
