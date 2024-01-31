@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -359,7 +358,7 @@ namespace Maladin.SqlServerMigration.Migrations
                     table.PrimaryKey("PK_OrderSet", x => x.Id);
                     table.UniqueConstraint("AK_OrderSet_Uid", x => x.Uid);
                     table.CheckConstraint("CK_OrderSet_UsedPoints", "[UsedPoints] >= 0");
-                    table.CheckConstraint("CTK_OrderSet_InvoiceNumber_DeliveryId", "([UsedPoints] IS NULL OR [DeliveryId] IS NULL) AND NOT ([UsedPoints] IS NULL AND [DeliveryId] IS NULL)");
+                    table.CheckConstraint("CTK_OrderSet_InvoiceNumber_DeliveryId", "NOT (([UsedPoints] IS NULL OR [DeliveryId] IS NULL) AND NOT ([UsedPoints] IS NULL AND [DeliveryId] IS NULL))");
                     table.ForeignKey(
                         name: "FK_OrderSet_Delivery_DeliveryId",
                         column: x => x.DeliveryId,

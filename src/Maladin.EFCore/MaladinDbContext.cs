@@ -123,7 +123,7 @@ namespace Maladin.EFCore
                     string invoiceNumberColumnName = tb.Metadata.GetProperty(nameof(OrderSet.InvoiceNumber)).GetColumnName();
                     string deliveryIdColumnName = tb.Metadata.GetProperty(nameof(OrderSet.DeliveryId)).GetColumnName();
 
-                    tb.HasCheckConstraint($"CTK_{tableName}_{invoiceNumberColumnName}_{deliveryIdColumnName}", $"([{usedPointColumnName}] IS NULL OR [{deliveryIdColumnName}] IS NULL) AND NOT ([{usedPointColumnName}] IS NULL AND [{deliveryIdColumnName}] IS NULL)");
+                    tb.HasCheckConstraint($"CTK_{tableName}_{invoiceNumberColumnName}_{deliveryIdColumnName}", $"NOT (([{usedPointColumnName}] IS NULL OR [{deliveryIdColumnName}] IS NULL) AND NOT ([{usedPointColumnName}] IS NULL AND [{deliveryIdColumnName}] IS NULL))");
                 });
 
                 builder.HasAlternateKey(o => o.Uid);

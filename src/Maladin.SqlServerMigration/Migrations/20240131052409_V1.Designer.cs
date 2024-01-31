@@ -450,7 +450,7 @@ namespace Maladin.SqlServerMigration.Migrations
                         {
                             t.HasCheckConstraint("CK_OrderSet_UsedPoints", "[UsedPoints] >= 0");
 
-                            t.HasCheckConstraint("CTK_OrderSet_InvoiceNumber_DeliveryId", "([UsedPoints] IS NULL OR [DeliveryId] IS NULL) AND NOT ([UsedPoints] IS NULL AND [DeliveryId] IS NULL)");
+                            t.HasCheckConstraint("CTK_OrderSet_InvoiceNumber_DeliveryId", "NOT (([UsedPoints] IS NULL OR [DeliveryId] IS NULL) AND NOT ([UsedPoints] IS NULL AND [DeliveryId] IS NULL))");
                         });
                 });
 
