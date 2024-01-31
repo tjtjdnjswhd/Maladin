@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Maladin.SqlServerMigration": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
