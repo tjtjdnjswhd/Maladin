@@ -1,4 +1,6 @@
-namespace Portone.Models
+using Portone.Models;
+
+namespace Portone.Client
 {
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.0.1.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class PortoneV2Client

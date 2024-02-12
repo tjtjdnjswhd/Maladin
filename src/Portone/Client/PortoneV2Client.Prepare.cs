@@ -2,7 +2,7 @@
 
 using System.Text;
 
-namespace Portone.Models
+namespace Portone.Client
 {
     public partial class PortoneV2Client
     {

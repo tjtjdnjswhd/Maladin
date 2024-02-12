@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 
-using Portone.Models;
+using Portone.Client;
 
 namespace Portone.Extensions
 {
