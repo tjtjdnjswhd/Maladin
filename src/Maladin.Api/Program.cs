@@ -1,7 +1,7 @@
 using AspNet.Security.OAuth.KakaoTalk;
 using AspNet.Security.OAuth.Naver;
 
-using Maladin.Api.Constants;
+using Maladin.Api.Extensions;
 using Maladin.Api.Options;
 using Maladin.EFCore;
 using Maladin.Services.Extensions;
