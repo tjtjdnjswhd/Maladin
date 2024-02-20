@@ -25,9 +25,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddDistributedMemoryCache();
+
 builder.Services.AddPortoneClient();
 
-JwtOptions jwtOptions = builder.Configuration.GetValue<JwtOptions>(JWT_SECTION) ?? throw new NullReferenceException();
+JwtOptions jwtOptions = builder.Configuration.GetRequiredSection(JWT_SECTION).Get<JwtOptions>() ?? throw new NullReferenceException();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetRequiredSection(JWT_SECTION));
 
 builder.Services.AddJwtService(jwtOptions.SecurityAlgorithm, CreateKey);
@@ -52,38 +54,40 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = CreateKey(jwtOptions.SecureKey)
     };
 
-    options.Events.OnAuthenticationFailed = context =>
+    options.Events = new()
     {
-        if (context.Exception is SecurityTokenExpiredException)
+        OnAuthenticationFailed = context =>
         {
-            context.Response.Headers.Append("Access-Token-Expired", StringValues.Empty);
+            if (context.Exception is SecurityTokenExpiredException)
+            {
+                context.Response.Headers.Append("Access-Token-Expired", StringValues.Empty);
+            }
+            return Task.CompletedTask;
+        },
+        OnMessageReceived = context =>
+        {
+            context.Token = context.Request.Cookies.TryGetValue(jwtOptions.AccessTokenName, out string? accessToken) ? accessToken : null;
+            return Task.CompletedTask;
         }
-        return Task.CompletedTask;
     };
-
-    options.Events.OnMessageReceived = context =>
-    {
-        context.Token = context.Request.Cookies.TryGetValue(jwtOptions.AccessTokenName, out string? accessToken) ? accessToken : null;
-        return Task.CompletedTask;
-    };
-})
-.AddGoogle(options =>
-{
-    options.ClientId = builder.Configuration.GetValue<string>("OAuthProvider:Google:ClientId") ?? throw new NullReferenceException();
-    options.ClientSecret = builder.Configuration.GetValue<string>("OAuthProvider:Google:ClientSecret") ?? throw new NullReferenceException();
-    options.AuthorizationEndpoint += "?prompt=consent";
-})
-.AddKakaoTalk(options =>
-{
-    options.ClientId = builder.Configuration.GetValue<string>("OAuthProvider:Kakaotalk:ClientId") ?? throw new NullReferenceException();
-    options.ClientSecret = builder.Configuration.GetValue<string>("OAuthProvider:Kakaotalk.ClientSecret") ?? throw new NullReferenceException();
-    options.AuthorizationEndpoint += "?prompt=login";
-})
-.AddNaver(options =>
-{
-    options.ClientId = builder.Configuration.GetValue<string>("OAuthProvider:Naver:ClientId") ?? throw new NullReferenceException();
-    options.ClientSecret = builder.Configuration.GetValue<string>("OAuthProvider:Naver:ClientSecret") ?? throw new NullReferenceException();
 });
+//.AddGoogle(options =>
+//{
+//    options.ClientId = builder.Configuration.GetValue<string>("OAuthProviderName:Google:ClientId") ?? throw new NullReferenceException();
+//    options.ClientSecret = builder.Configuration.GetValue<string>("OAuthProviderName:Google:ClientSecret") ?? throw new NullReferenceException();
+//    options.AuthorizationEndpoint += "?prompt=consent";
+//})
+//.AddKakaoTalk(options =>
+//{
+//    options.ClientId = builder.Configuration.GetValue<string>("OAuthProviderName:Kakaotalk:ClientId") ?? throw new NullReferenceException();
+//    options.ClientSecret = builder.Configuration.GetValue<string>("OAuthProviderName:Kakaotalk.ClientSecret") ?? throw new NullReferenceException();
+//    options.AuthorizationEndpoint += "?prompt=login";
+//})
+//.AddNaver(options =>
+//{
+//    options.ClientId = builder.Configuration.GetValue<string>("OAuthProviderName:Naver:ClientId") ?? throw new NullReferenceException();
+//    options.ClientSecret = builder.Configuration.GetValue<string>("OAuthProviderName:Naver:ClientSecret") ?? throw new NullReferenceException();
+//});
 
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy(AuthorizePolicyConstants.OAUTH, pb =>
