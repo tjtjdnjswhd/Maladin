@@ -65,7 +65,8 @@ namespace Maladin.EFCore
                 builder.Property(u => u.IsExpired).HasDefaultValue(false);
                 builder.Property(u => u.SignupAt).HasValueGenerator<DateTimeOffsetUtcNowGenerator>().ValueGeneratedOnAdd();
 
-                builder.HasOne(u => u.Role).WithMany(r => r.Users).HasForeignKey(u => u.RoleId);
+                builder.HasMany(u => u.Roles).WithMany(r => r.Users).UsingEntity("UserRole");
+
                 builder.HasOne(u => u.Membership).WithMany(m => m.Users).HasForeignKey(r => r.MembershipId);
 
                 builder.HasMany(u => u.OAuthIds).WithOne(o => o.User).HasForeignKey(o => o.UserId);

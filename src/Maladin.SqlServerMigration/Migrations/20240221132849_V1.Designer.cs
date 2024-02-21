@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maladin.SqlServerMigration.Migrations
 {
     [DbContext(typeof(MaladinDbContext))]
-    [Migration("20240131052409_V1")]
+    [Migration("20240221132849_V1")]
     partial class V1
     {
         /// <inheritdoc />
@@ -648,9 +648,6 @@ namespace Maladin.SqlServerMigration.Migrations
                         .IsUnicode(true)
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int>("RoleId")
-                        .HasColumnType("int");
-
                     b.Property<DateTimeOffset>("SignupAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetimeoffset");
@@ -674,8 +671,6 @@ namespace Maladin.SqlServerMigration.Migrations
 
                     b.HasIndex("Name")
                         .IsUnique();
-
-                    b.HasIndex("RoleId");
 
                     b.ToTable("User");
                 });
@@ -714,6 +709,21 @@ namespace Maladin.SqlServerMigration.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("UserAddress");
+                });
+
+            modelBuilder.Entity("UserRole", b =>
+                {
+                    b.Property<int>("RolesId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UsersId")
+                        .HasColumnType("int");
+
+                    b.HasKey("RolesId", "UsersId");
+
+                    b.HasIndex("UsersId");
+
+                    b.ToTable("UserRole");
                 });
 
             modelBuilder.Entity("Maladin.EFCore.Models.BookDisplay", b =>
@@ -900,15 +910,7 @@ namespace Maladin.SqlServerMigration.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Maladin.EFCore.Models.Role", "Role")
-                        .WithMany("Users")
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Membership");
-
-                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("Maladin.EFCore.Models.UserAddress", b =>
@@ -920,6 +922,21 @@ namespace Maladin.SqlServerMigration.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("UserRole", b =>
+                {
+                    b.HasOne("Maladin.EFCore.Models.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RolesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Maladin.EFCore.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UsersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Maladin.EFCore.Models.BookDisplay", b =>
@@ -1010,11 +1027,6 @@ namespace Maladin.SqlServerMigration.Migrations
             modelBuilder.Entity("Maladin.EFCore.Models.Publisher", b =>
                 {
                     b.Navigation("Books");
-                });
-
-            modelBuilder.Entity("Maladin.EFCore.Models.Role", b =>
-                {
-                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("Maladin.EFCore.Models.Translator", b =>

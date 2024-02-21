@@ -13,21 +13,19 @@ namespace Maladin.EFCore.Models
     [Index(nameof(Email), IsUnique = true)]
     public class User : EntityBase
     {
-        public User(string name, string email, IPAddress signupIp, int roleId, int membershipId)
+        public User(string name, string email, IPAddress signupIp, int membershipId)
         {
             Name = name;
             Email = email;
             SignupIp = signupIp;
-            RoleId = roleId;
             MembershipId = membershipId;
         }
 
-        public User(string name, string email, IPAddress signupIp, Role role, Membership membership)
+        public User(string name, string email, IPAddress signupIp, Membership membership)
         {
             Name = name;
             Email = email;
             SignupIp = signupIp;
-            Role = role;
             Membership = membership;
         }
 
@@ -56,14 +54,11 @@ namespace Maladin.EFCore.Models
         public bool IsLocked { get; set; }
 
         [Required]
-        public int RoleId { get; set; }
-
-        [Required]
         public int MembershipId { get; set; }
 
-        public Role Role { get; set; }
-
         public Membership Membership { get; set; }
+
+        public List<Role> Roles { get; } = [];
 
         public List<OAuthId> OAuthIds { get; } = [];
 
