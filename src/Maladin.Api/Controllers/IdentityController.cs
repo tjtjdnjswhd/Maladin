@@ -66,7 +66,7 @@ namespace Maladin.Api.Controllers
             {
                 claimInfo = await _dbContext.OAuthIds
                     .Where(o => o.Provider.Name == oauthProviderName && o.NameIdentifier == nameIdentifier)
-                    .Select(o => new ClaimInfo() { UserId = o.UserId, UserName = o.User.Name, UserEmail = o.User.Email, RoleName = o.User.Role.Name })
+                    .Select(o => new ClaimInfo() { UserId = o.UserId, UserName = o.User.Name, UserEmail = o.User.Email, RoleNames = o.User.Roles.Select(r => r.Name) })
                     .FirstOrDefaultAsync(cancellationToken);
 
                 if (claimInfo is null)
@@ -189,7 +189,7 @@ namespace Maladin.Api.Controllers
             {
                 claimInfo = await _dbContext.Users
                    .Where(u => u.Id == userId)
-                   .Select(u => new ClaimInfo() { UserId = u.Id, UserEmail = u.Email, UserName = u.Name, RoleName = u.Role.Name })
+                   .Select(u => new ClaimInfo() { UserId = u.Id, UserEmail = u.Email, UserName = u.Name, RoleNames = u.Roles.Select(r => r.Name) })
                    .FirstOrDefaultAsync(cancellationToken);
             }
             catch (Exception e)
@@ -235,7 +235,7 @@ namespace Maladin.Api.Controllers
             _logger.LogInformation("Begin signup");
             _logger.LogOAuthInfo(oauthProviderName, nameIdentifier);
             AuthenticationProperties? authenticationProperties = (await HttpContext.AuthenticateAsync(oauthProviderName)).Properties;
-            if (oauthProviderName is null || nameIdentifier is null || email is null || authenticationProperties is null || !authenticationProperties.Items.TryGetValue(SIGNUP_USER_NAME, out string? userName))
+            if (oauthProviderName is null || nameIdentifier is null || email is null || authenticationProperties is null || !authenticationProperties.Items.TryGetValue(SIGNUP_USER_NAME, out string? userName) || userName is null)
             {
                 _logger.LogInformation("Invalid signup info");
                 return Unauthorized();
@@ -282,17 +282,20 @@ namespace Maladin.Api.Controllers
                     return BadRequest();
                 }
 
-                int roleId = await _dbContext.Roles.OrderBy(r => r.Priority).Select(r => r.Priority).FirstOrDefaultAsync(cancellationToken);
+                Role? role = await _dbContext.Roles.OrderBy(r => r.Priority).FirstOrDefaultAsync(cancellationToken);
                 int membershipId = await _dbContext.Memberships.OrderBy(r => r.Level).Select(r => r.Level).FirstOrDefaultAsync(cancellationToken);
-                if (roleId == default || membershipId == default)
+                if (role is null || membershipId == default)
                 {
-                    _logger.LogError("Membership or Role in DB not exist");
+                    _logger.LogError("Membership or Roles in DB not exist");
                     return this.InternalServerError();
                 }
 
-                User user = new(userName!, email, HttpContext.Connection.RemoteIpAddress!, roleId, membershipId);
+                User user = new(userName, email, HttpContext.Connection.RemoteIpAddress!, membershipId);
+                user.Roles.Add(role);
+
                 OAuthId oAuthId = new(nameIdentifier, oauthProvider, user);
                 _dbContext.OAuthIds.Add(oAuthId);
+
                 await _dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (Exception e)
@@ -387,7 +390,7 @@ namespace Maladin.Api.Controllers
                 int deletedRowCount = await _dbContext.OAuthIds.Where(o => o.UserId == userId && o.Provider.Name == oauthProvider).ExecuteDeleteAsync(cancellationToken);
                 if (deletedRowCount == 0)
                 {
-                    //TODO: return with 
+                    //TODO: return with user can not login with oauth provider message
                     return NotFound();
                 }
 
@@ -417,7 +420,7 @@ namespace Maladin.Api.Controllers
                 new Claim(JwtRegisteredClaimNames.Email, claimInfo.UserEmail),
                 new Claim(JwtRegisteredClaimNames.Aud, _jwtOptions.Audience),
                 new Claim(JwtRegisteredClaimNames.Iss, _jwtOptions.Issuer),
-                new Claim(ClaimTypes.Role, claimInfo.RoleName)
+                new Claim(ClaimTypes.Role, string.Join(", ", claimInfo.RoleNames))
             ];
     }
 }

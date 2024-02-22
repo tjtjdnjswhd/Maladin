@@ -10,10 +10,13 @@
   <ItemGroup>
     <PackageReference Include="AspNet.Security.OAuth.KakaoTalk" Version="8.0.0" />
     <PackageReference Include="AspNet.Security.OAuth.Naver" Version="8.0.0" />
+    <PackageReference Include="AutoMapper" Version="13.0.1" />
+    <PackageReference Include="LinqExpressionParser.AspNetCore" Version="0.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    <PackageReference Include="System.Linq.Async.Queryable" Version="6.0.1" />
   </ItemGroup>
 
   <ItemGroup>

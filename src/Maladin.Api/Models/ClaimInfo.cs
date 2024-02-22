@@ -8,6 +8,6 @@
 
         public required string UserEmail { get; init; }
 
-        public required string RoleName { get; init; }
+        public required IEnumerable<string> RoleNames { get; init; }
     }
 }
