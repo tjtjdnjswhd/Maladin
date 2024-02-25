@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
 
 namespace Maladin.Api.Models
 {
@@ -7,7 +6,6 @@ namespace Maladin.Api.Models
     {
         public required string OAuthProviderName { get; init; }
 
-        [JsonConverter(typeof(JsonStringEnumConverter<EChallengeKind>))]
         public required EChallengeKind ChallengeKind { get; init; }
 
         public string? UserName { get; init; }

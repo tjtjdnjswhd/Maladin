@@ -1,5 +1,4 @@
-﻿using Maladin.Api.ActionResults;
-using Maladin.Api.Extensions;
+﻿using Maladin.Api.Extensions;
 using Maladin.Api.Models;
 using Maladin.Api.Options;
 using Maladin.EFCore;
@@ -21,7 +20,7 @@ namespace Maladin.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public partial class IdentityController(MaladinDbContext dbContext, IOptions<JwtOptions> jwtOptions, IJwtService jwtService, IDistributedCache cache, ILogger<IdentityController> logger) : ControllerBase
+    public class IdentityController(MaladinDbContext dbContext, IOptions<JwtOptions> jwtOptions, IJwtService jwtService, IDistributedCache cache, ILogger<IdentityController> logger) : ControllerBase
     {
         private const string SIGNUP_USER_NAME = "userName";
 
@@ -48,14 +47,14 @@ namespace Maladin.Api.Controllers
         }
 
         [HttpGet("login")]
-        [Authorize(AuthorizePolicy.OAUTH)]
+        [Authorize(AuthorizePolicyConstants.OAUTH)]
         public async Task<IActionResult> LoginCallbackAsync([FromQuery] string? returnUrl, CancellationToken cancellationToken)
         {
             string? oauthProviderName = User.Identity?.AuthenticationType;
             string? nameIdentifier = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             _logger.LogInformation("Begin login");
-            LogOAuthInfo(oauthProviderName, nameIdentifier);
+            _logger.LogOAuthInfo(oauthProviderName, nameIdentifier);
             if (oauthProviderName is null || nameIdentifier is null)
             {
                 return Unauthorized();
@@ -90,7 +89,8 @@ namespace Maladin.Api.Controllers
             }
             catch (Exception e)
             {
-                return new DbContextExceptionResult(e);
+                _logger.LogDbContextException(e);
+                return this.InternalServerError();
             }
 
             Claim[] claims = GetClaims(claimInfo);
@@ -113,7 +113,8 @@ namespace Maladin.Api.Controllers
             catch (Exception e)
             {
                 await transaction.RollbackAsync(cancellationToken);
-                return new DistributedCacheExceptionResult(e);
+                _logger.LogDistributedCacheException(e);
+                return this.InternalServerError();
             }
 
             try
@@ -122,7 +123,8 @@ namespace Maladin.Api.Controllers
             }
             catch (Exception e)
             {
-                return new DbContextExceptionResult(e);
+                _logger.LogDbContextException(e);
+                return this.InternalServerError();
             }
 
             Response.Cookies.Append(_jwtOptions.AccessTokenName, accessToken, cookieOptions);
@@ -133,7 +135,7 @@ namespace Maladin.Api.Controllers
         }
 
         [HttpGet("logout")]
-        [Authorize(AuthorizePolicy.USER)]
+        [Authorize(AuthorizePolicyConstants.USER)]
         public async Task<IActionResult> LogoutAsync()
         {
             _logger.LogInformation("User logout. UserId: {sub}", User.FindFirstValue(JwtRegisteredClaimNames.Sub));
@@ -160,7 +162,8 @@ namespace Maladin.Api.Controllers
             }
             catch (Exception e)
             {
-                return new DistributedCacheExceptionResult(e);
+                _logger.LogDistributedCacheException(e);
+                return this.InternalServerError();
             }
 
             if (cachedAccessToken != accessToken)
@@ -191,7 +194,8 @@ namespace Maladin.Api.Controllers
             }
             catch (Exception e)
             {
-                return new DbContextExceptionResult(e);
+                _logger.LogDbContextException(e);
+                return this.InternalServerError();
             }
 
             if (claimInfo is null)
@@ -213,14 +217,15 @@ namespace Maladin.Api.Controllers
             }
             catch (Exception e)
             {
-                return new DistributedCacheExceptionResult(e);
+                _logger.LogDistributedCacheException(e);
+                return this.InternalServerError();
             }
 
             return Ok();
         }
 
         [HttpGet("signup")]
-        [Authorize(AuthorizePolicy.OAUTH)]
+        [Authorize(AuthorizePolicyConstants.OAUTH)]
         public async Task<IActionResult> SignupCallbackAsync([FromQuery] string? returnUrl, CancellationToken cancellationToken)
         {
             string? oauthProviderName = User.Identity?.AuthenticationType;
@@ -228,7 +233,7 @@ namespace Maladin.Api.Controllers
             string? email = User.FindFirstValue(ClaimTypes.Email);
 
             _logger.LogInformation("Begin signup");
-            LogOAuthInfo(oauthProviderName, nameIdentifier);
+            _logger.LogOAuthInfo(oauthProviderName, nameIdentifier);
             AuthenticationProperties? authenticationProperties = (await HttpContext.AuthenticateAsync(oauthProviderName)).Properties;
             if (oauthProviderName is null || nameIdentifier is null || email is null || authenticationProperties is null || !authenticationProperties.Items.TryGetValue(SIGNUP_USER_NAME, out string? userName) || userName is null)
             {
@@ -243,19 +248,20 @@ namespace Maladin.Api.Controllers
             }
             catch (Exception e)
             {
-                return new DbContextExceptionResult(e);
+                _logger.LogDbContextException(e);
+                return this.InternalServerError();
             }
 
             if (oauthProvider is null)
             {
                 LogOAuthProviderDBNotRegisted(oauthProviderName);
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                return this.InternalServerError();
             }
 
             if (!await HttpContext.IsAuthenticationSchemeExist(oauthProviderName))
             {
-                LogOAuthProviderSchemeNotRegisted(oauthProviderName);
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                LogOAuthProviderSchemeNotRegiested(oauthProviderName);
+                return this.InternalServerError();
             }
 
             try
@@ -281,7 +287,7 @@ namespace Maladin.Api.Controllers
                 if (role is null || membershipId == default)
                 {
                     _logger.LogError("Membership or Roles in DB not exist");
-                    return StatusCode(StatusCodes.Status500InternalServerError);
+                    return this.InternalServerError();
                 }
 
                 User user = new(userName, email, HttpContext.Connection.RemoteIpAddress!, membershipId);
@@ -294,7 +300,8 @@ namespace Maladin.Api.Controllers
             }
             catch (Exception e)
             {
-                return new DbContextExceptionResult(e);
+                _logger.LogDbContextException(e);
+                return this.InternalServerError();
             }
 
             _logger.LogInformation("Signup success");
@@ -302,7 +309,7 @@ namespace Maladin.Api.Controllers
         }
 
         [HttpGet("add")]
-        [Authorize(AuthorizePolicy.OAUTH)]
+        [Authorize(AuthorizePolicyConstants.OAUTH)]
         public async Task<IActionResult> AddCallbackAsync([FromQuery] string? returnUrl, CancellationToken cancellationToken)
         {
             AuthenticateResult defaultAuthenticationResult = await HttpContext.AuthenticateAsync();
@@ -315,7 +322,7 @@ namespace Maladin.Api.Controllers
             string? nameIdentifier = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             _logger.LogInformation("Begin login");
-            LogOAuthInfo(oauthProviderName, nameIdentifier);
+            _logger.LogOAuthInfo(oauthProviderName, nameIdentifier);
             if (oauthProviderName is null || nameIdentifier is null)
             {
                 return Unauthorized();
@@ -323,8 +330,8 @@ namespace Maladin.Api.Controllers
 
             if (!await HttpContext.IsAuthenticationSchemeExist(oauthProviderName))
             {
-                LogOAuthProviderSchemeNotRegisted(oauthProviderName);
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                LogOAuthProviderSchemeNotRegiested(oauthProviderName);
+                return this.InternalServerError();
             }
 
             int oauthProviderId;
@@ -334,7 +341,8 @@ namespace Maladin.Api.Controllers
             }
             catch (Exception e)
             {
-                return new DbContextExceptionResult(e);
+                _logger.LogDbContextException(e);
+                return this.InternalServerError();
             }
 
             if (oauthProviderId == default)
@@ -358,14 +366,15 @@ namespace Maladin.Api.Controllers
             }
             catch (Exception e)
             {
-                return new DbContextExceptionResult(e);
+                _logger.LogDbContextException(e);
+                return this.InternalServerError();
             }
 
             return returnUrl is null ? Ok() : Redirect(returnUrl);
         }
 
         [HttpPost("remove")]
-        [Authorize(AuthorizePolicy.USER)]
+        [Authorize(AuthorizePolicyConstants.USER)]
         public async Task<IActionResult> RemoveAsync([FromQuery] string oauthProvider, CancellationToken cancellationToken)
         {
             int userId = int.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
@@ -389,8 +398,19 @@ namespace Maladin.Api.Controllers
             }
             catch (Exception e)
             {
-                return new DbContextExceptionResult(e);
+                _logger.LogDbContextException(e);
+                return this.InternalServerError();
             }
+        }
+
+        private void LogOAuthProviderDBNotRegisted(string oauthProviderName)
+        {
+            _logger.LogWarning("OAuth provider not registed from DB. provider name: {oauthProviderName}", oauthProviderName);
+        }
+
+        private void LogOAuthProviderSchemeNotRegiested(string oauthProviderName)
+        {
+            _logger.LogWarning("OAuth authentication scheme not registed. provider name: {oauthProviderName}", oauthProviderName);
         }
 
         private Claim[] GetClaims(ClaimInfo claimInfo) =>
@@ -402,14 +422,5 @@ namespace Maladin.Api.Controllers
                 new Claim(JwtRegisteredClaimNames.Iss, _jwtOptions.Issuer),
                 new Claim(ClaimTypes.Role, string.Join(", ", claimInfo.RoleNames))
             ];
-
-        [LoggerMessage(Level = LogLevel.Information, Message = "OAuthProviderName: {oauthProviderName}, NameIdentifier: {nameIdentifier}")]
-        public partial void LogOAuthInfo(string? oauthProviderName, string? nameIdentifier);
-
-        [LoggerMessage(LogLevel.Warning, "OAuth provider not registed from DB. provider name: {oauthProviderName}")]
-        private partial void LogOAuthProviderDBNotRegisted(string oauthProviderName);
-
-        [LoggerMessage(LogLevel.Warning, "OAuth authentication scheme not registed. provider name: {oauthProviderName}")]
-        private partial void LogOAuthProviderSchemeNotRegisted(string oauthProviderName);
     }
 }

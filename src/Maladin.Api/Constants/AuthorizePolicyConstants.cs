@@ -1,6 +1,6 @@
 ﻿namespace Maladin.Api.Extensions
 {
-    internal static class AuthorizePolicy
+    internal static class AuthorizePolicyConstants
     {
         public const string OAUTH = "_OAUTH";
 
