@@ -2,100 +2,153 @@
 
 using LinqExpressionParser.AspNetCore.Results;
 
+using Maladin.Api.ActionResults;
+using Maladin.Api.Extensions;
+using Maladin.Api.Models;
 using Maladin.EFCore;
 using Maladin.EFCore.Models.Abstractions;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace Maladin.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public abstract class EntityController<TEntity, TDto> : ControllerBase
+    public abstract class EntityController<TEntity, TReadDto, TCreateDto, TUpdateDto> : ControllerBase
         where TEntity : EntityBase
-        where TDto : class
+        where TReadDto : class
+        where TCreateDto : class
+        where TUpdateDto : class
     {
+        protected abstract int MaxReadCount { get; }
+
         protected MaladinDbContext DbContext { get; }
 
         protected DbSet<TEntity> DbSet { get; }
 
         protected IMapper Mapper { get; }
 
-        protected ILogger Logger { get; }
-
-        protected EntityController(MaladinDbContext dbContext, IMapper mapper, ILogger logger)
+        protected EntityController(MaladinDbContext dbContext, IMapper mapper)
         {
             DbContext = dbContext;
             DbSet = DbContext.Set<TEntity>();
             Mapper = mapper;
-            Logger = logger;
         }
 
         [HttpGet("{id:int}")]
         public virtual async Task<IActionResult> GetAsync([FromRoute] int id, CancellationToken cancellationToken)
         {
-            if (!await IsAllowedAsync(cancellationToken))
+            if (!await IsReadAllowedAsync(cancellationToken))
             {
-                return User.Identity?.IsAuthenticated switch
-                {
-                    true => Forbid(),
-                    _ => Unauthorized()
-                };
+                return User.Identity?.IsAuthenticated ?? false ? Forbid() : Unauthorized();
             }
 
-            TEntity? entity = await DbSet.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+            TEntity? entity;
+            try
+            {
+                entity = await DbSet.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+            }
+            catch (Exception e)
+            {
+                return new DbContextExceptionResult(e);
+            }
+
             if (entity is null)
             {
                 return NotFound();
             }
 
-            TDto dto = Mapper.Map<TEntity, TDto>(entity);
-            if (await IsAllowedAsync(dto, cancellationToken))
-            {
-                return Ok(dto);
-            }
-            else
-            {
-                return Forbid();
-            }
+            TReadDto dto = Mapper.Map<TEntity, TReadDto>(entity);
+            return await IsReadAllowedAsync(dto, cancellationToken) ? Ok(dto) : Forbid();
         }
 
         [HttpGet]
-        public virtual async IAsyncEnumerable<TDto> GetAsync(ValueParseResult<TEntity, bool> filter, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public virtual async IAsyncEnumerable<TReadDto> GetAsync([FromQuery] ValueParseResult<TEntity, bool> filter, [FromQuery] Page page, [EnumeratorCancellation] CancellationToken cancellationToken, [FromQuery] string orderBy = nameof(EntityBase.Id))
         {
-            if (!await IsAllowedAsync(cancellationToken))
+            if (!await IsReadAllowedAsync(cancellationToken))
             {
-                HttpContext.Response.StatusCode = User.Identity?.IsAuthenticated switch
-                {
-                    true => StatusCodes.Status403Forbidden,
-                    _ => StatusCodes.Status401Unauthorized
-                };
-
+                ActionResult actionResult = User.Identity?.IsAuthenticated ?? false ? Forbid() : Unauthorized();
+                actionResult.ExecuteResult(ControllerContext);
                 yield break;
             }
 
-            IQueryable<TEntity> serverQuery = ServerQuery(DbSet, filter);
-            IQueryable<TDto> dtoQuery = Mapper.ProjectTo<TDto>(serverQuery);
-            IAsyncEnumerable<TDto> asyncDtoQuery = ClientQuery(dtoQuery);
+            PropertyInfo? orderByProperty = typeof(TEntity).GetProperty(orderBy, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            if (orderByProperty is null)
+            {
+                ModelState.AddModelError(nameof(orderBy), "orderBy value must be property name of entity");
+                BadRequest(ModelState).ExecuteResult(ControllerContext);
+                yield break;
+            }
+
+            IAsyncEnumerable<TReadDto> asyncDtoQuery;
+            try
+            {
+                IQueryable<TEntity> serverQuery = QueryServer(DbSet, filter, page, orderByProperty);
+                IAsyncEnumerable<TReadDto> dtoQuery = Mapper.ProjectTo<TReadDto>(serverQuery).AsAsyncEnumerable();
+                asyncDtoQuery = QueryClient(dtoQuery, cancellationToken);
+            }
+            catch (Exception e)
+            {
+                new DbContextExceptionResult(e).ExecuteResult(ControllerContext);
+                yield break;
+            }
 
             await foreach (var dto in asyncDtoQuery.WithCancellation(cancellationToken))
             {
-                if (await IsAllowedAsync(dto, cancellationToken))
+                if (await IsReadAllowedAsync(dto, cancellationToken))
                 {
                     yield return dto;
                 }
             }
         }
 
-        protected abstract ValueTask<bool> IsAllowedAsync(CancellationToken cancellationToken);
+        [HttpPost]
+        public virtual async Task<IActionResult> PostAsync([FromBody] TCreateDto dto, CancellationToken cancellationToken)
+        {
+            if (!await IsCreateAllowedAsync(dto, cancellationToken))
+            {
+                return User.Identity?.IsAuthenticated ?? false ? Forbid() : Unauthorized();
+            }
 
-        protected abstract ValueTask<bool> IsAllowedAsync(TDto dto, CancellationToken cancellationToken);
+            TEntity entity = Create(dto);
 
-        protected abstract IQueryable<TEntity> ServerQuery(IQueryable<TEntity> query, ValueParseResult<TEntity, bool> filter);
+            throw new NotImplementedException();
+        }
 
-        protected abstract IAsyncEnumerable<TDto> ClientQuery(IQueryable<TDto> query);
+        [HttpPut("{id:int}")]
+        public virtual async Task<IActionResult> PutAsync([FromRoute] int id, [FromBody] TUpdateDto dto, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        [HttpDelete("{id:int}")]
+        public virtual async Task<IActionResult> DeleteAsync([FromRoute] int id, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected virtual IQueryable<TEntity> QueryServer(IQueryable<TEntity> query, ValueParseResult<TEntity, bool> filter, Page page, PropertyInfo orderByProperty)
+        {
+            int count = Math.Min(MaxReadCount, page.Count);
+            return query.Where(filter.GetExpression()).OrderBy(orderByProperty).Skip(count * page.Number).Take(count);
+        }
+
+        protected virtual IAsyncEnumerable<TReadDto> QueryClient(IAsyncEnumerable<TReadDto> query, CancellationToken cancellationToken) => query;
+
+        protected abstract ValueTask<bool> IsReadAllowedAsync(CancellationToken cancellationToken);
+
+        protected abstract ValueTask<bool> IsReadAllowedAsync(TReadDto dto, CancellationToken cancellationToken);
+
+        protected abstract ValueTask<bool> IsCreateAllowedAsync(TCreateDto dto, CancellationToken cancellationToken);
+
+        protected abstract ValueTask<bool> IsUpdateAllowedAsync(int Id, TUpdateDto dto, CancellationToken cancellationToken);
+
+        protected abstract ValueTask<bool> IsDeleteAllowedAsync(int id, CancellationToken cancellationToken);
+
+        protected abstract TEntity Create(TCreateDto create);
     }
 }

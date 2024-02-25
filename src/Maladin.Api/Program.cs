@@ -90,7 +90,7 @@ builder.Services.AddAuthentication(options =>
 //});
 
 builder.Services.AddAuthorizationBuilder()
-    .AddPolicy(AuthorizePolicyConstants.OAUTH, pb =>
+    .AddPolicy(AuthorizePolicy.OAUTH, pb =>
     {
         pb.AddAuthenticationSchemes(GoogleDefaults.AuthenticationScheme, KakaoTalkAuthenticationDefaults.AuthenticationScheme, NaverAuthenticationDefaults.AuthenticationScheme);
         pb.RequireAuthenticatedUser().RequireClaim(ClaimTypes.NameIdentifier);
