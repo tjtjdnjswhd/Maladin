@@ -14,7 +14,7 @@ namespace Maladin.Services.Extensions
             ArgumentNullException.ThrowIfNull(keyGenerator);
 
             services.AddScoped<IJwtService, JwtService>();
-            services.AddOptionsWithValidateOnStart<JwtServiceOptions>()
+            services.AddOptions<JwtServiceOptions>()
                 .Configure(o =>
                 {
                     o.SecurityAlgorithm = securityAlgorithm;

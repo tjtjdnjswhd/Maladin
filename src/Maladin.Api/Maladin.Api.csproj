@@ -11,6 +11,7 @@
     <PackageReference Include="AspNet.Security.OAuth.KakaoTalk" Version="8.0.0" />
     <PackageReference Include="AspNet.Security.OAuth.Naver" Version="8.0.0" />
     <PackageReference Include="AutoMapper" Version="13.0.1" />
+    <PackageReference Include="AutoMapper.Collection.EntityFrameworkCore" Version="10.0.0" />
     <PackageReference Include="LinqExpressionParser.AspNetCore" Version="0.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.1" />
@@ -23,6 +24,12 @@
     <ProjectReference Include="..\maladin.efcore\Maladin.EFCore.csproj" />
     <ProjectReference Include="..\Maladin.Services\Maladin.Services.csproj" />
     <ProjectReference Include="..\Portone\Portone.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Models\Dtos\Create\" />
+    <Folder Include="Models\Dtos\Read\" />
+    <Folder Include="Models\Dtos\Update\" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,7 @@
 using AspNet.Security.OAuth.KakaoTalk;
 using AspNet.Security.OAuth.Naver;
 
+using Maladin.Api.Constants;
 using Maladin.Api.Extensions;
 using Maladin.Api.Options;
 using Maladin.EFCore;
@@ -29,9 +30,9 @@ builder.Services.AddDistributedMemoryCache();
 
 builder.Services.AddPortoneClient();
 
-JwtOptions jwtOptions = builder.Configuration.GetRequiredSection(JWT_SECTION).Get<JwtOptions>() ?? throw new NullReferenceException();
-builder.Services.Configure<JwtOptions>(builder.Configuration.GetRequiredSection(JWT_SECTION));
-
+var jwtOptionsSection = builder.Configuration.GetRequiredSection(JWT_SECTION);
+JwtOptions jwtOptions = jwtOptionsSection.Get<JwtOptions>() ?? throw new NullReferenceException();
+builder.Services.Configure<JwtOptions>(jwtOptionsSection);
 builder.Services.AddJwtService(jwtOptions.SecurityAlgorithm, CreateKey);
 
 builder.Services.AddAuthentication(options =>
@@ -51,7 +52,7 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ValidIssuer = jwtOptions.Issuer,
         ValidAudience = jwtOptions.Audience,
-        IssuerSigningKey = CreateKey(jwtOptions.SecureKey)
+        IssuerSigningKey = CreateKey(jwtOptions.SecureKey),
     };
 
     options.Events = new()
@@ -90,10 +91,20 @@ builder.Services.AddAuthentication(options =>
 //});
 
 builder.Services.AddAuthorizationBuilder()
-    .AddPolicy(AuthorizePolicyConstants.OAUTH, pb =>
+    .AddPolicy(AuthorizePolicy.OAUTH, pb =>
     {
         pb.AddAuthenticationSchemes(GoogleDefaults.AuthenticationScheme, KakaoTalkAuthenticationDefaults.AuthenticationScheme, NaverAuthenticationDefaults.AuthenticationScheme);
         pb.RequireAuthenticatedUser().RequireClaim(ClaimTypes.NameIdentifier);
+    })
+    .AddPolicy(AuthorizePolicy.USER, pb =>
+    {
+        pb.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme);
+        pb.RequireAuthenticatedUser().RequireRole(AuthorizeRole.User);
+    })
+    .AddPolicy(AuthorizePolicy.ADMIN, pb =>
+    {
+        pb.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme);
+        pb.RequireAuthenticatedUser().RequireRole(AuthorizeRole.Admin);
     });
 
 string connectionString = builder.Configuration.GetConnectionString("Default") ?? throw new NullReferenceException();
