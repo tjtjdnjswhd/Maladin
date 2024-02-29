@@ -17,9 +17,9 @@ using Microsoft.Extensions.Options;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace Maladin.Api.Controllers
+namespace Maladin.Api.Controllers.Entity
 {
-    [Route("api/[controller]")]
+    [Route("api/entity/[controller]")]
     [ApiController]
     public abstract class EntityControllerBase<TEntity, TRead, TCreate, TUpdate> : ControllerBase
         where TEntity : EntityBase
@@ -27,7 +27,7 @@ namespace Maladin.Api.Controllers
         where TCreate : class
         where TUpdate : class
     {
-        protected abstract int MaxReadCount { get; }
+        protected int MaxReadCount { get; set; }
 
         protected MaladinDbContext DbContext { get; }
 
@@ -39,13 +39,25 @@ namespace Maladin.Api.Controllers
 
         protected EntityAuthorizeOptions<TEntity, TRead, TCreate, TUpdate> EntityAuthorizeOptions { get; }
 
-        protected EntityControllerBase(MaladinDbContext dbContext, IMapper mapper, ILogger logger, IOptions<EntityAuthorizeOptions<TEntity, TRead, TCreate, TUpdate>> entityAuthorizeOptions)
+        protected EntityControllerBase(MaladinDbContext dbContext, IMapper mapper, ILogger logger, IConfiguration configuration, IOptions<EntityAuthorizeOptions<TEntity, TRead, TCreate, TUpdate>> entityAuthorizeOptions)
         {
             DbContext = dbContext;
             DbSet = DbContext.Set<TEntity>();
             Mapper = mapper;
             Logger = logger;
             EntityAuthorizeOptions = entityAuthorizeOptions.Value;
+
+            string entityName = typeof(TEntity).Name;
+            int maxReadCount = configuration.GetValue($"EntityApi:{entityName}:MaxReadCount", 0);
+            if (maxReadCount == 0)
+            {
+                maxReadCount = configuration.GetValue("EntityApi:Default:MaxReadCount", 0);
+                if (maxReadCount == 0)
+                {
+                    throw new ArgumentException("Default MaxReadCount value required");
+                }
+                MaxReadCount = maxReadCount;
+            }
         }
 
         [HttpGet("{id:int}")]
@@ -134,7 +146,7 @@ namespace Maladin.Api.Controllers
                 return new DbContextExceptionResult(e);
             }
 
-            return CreatedAtAction("Get", new { id = entity.Id }, null);
+            return CreatedAtAction("Get", new { entity.Id }, null);
         }
 
         [HttpPut("{id:int}")]
@@ -156,7 +168,7 @@ namespace Maladin.Api.Controllers
                 return new DbContextExceptionResult(e);
             }
 
-            return CreatedAtAction("Get", new { id = entity.Id }, null);
+            return CreatedAtAction("Get", new { entity.Id }, null);
         }
 
         [HttpDelete("{id:int}")]

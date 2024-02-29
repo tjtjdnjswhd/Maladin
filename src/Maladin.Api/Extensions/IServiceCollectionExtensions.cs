@@ -1,4 +1,4 @@
-﻿using Maladin.Api.Controllers;
+﻿using Maladin.Api.Controllers.Entity;
 using Maladin.Api.Options;
 using Maladin.EFCore.Models.Abstractions;
 
