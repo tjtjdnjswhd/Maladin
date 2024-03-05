@@ -19,7 +19,7 @@ namespace Maladin.Services
 
         public string GenerateToken(ClaimsIdentity identity, string secureKey, TimeSpan? tokenExpiration, DateTime? notBefore)
         {
-            SecurityKey key = _options.GenerateSecurityKey!(secureKey);
+            SecurityKey key = _options.GenerateSecurityKey(secureKey);
             SigningCredentials credentials = new(key, _options.SecurityAlgorithm);
 
             JwtSecurityToken token = TokenHandler.CreateJwtSecurityToken(

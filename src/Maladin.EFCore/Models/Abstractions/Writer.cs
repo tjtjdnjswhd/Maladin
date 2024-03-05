@@ -4,20 +4,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Maladin.EFCore.Models.Abstractions
 {
-    public abstract class Writer : EntityBase
+    public abstract class Writer(string name, string? introduce) : EntityBase
     {
-        protected Writer(string name, string? introduce)
-        {
-            Name = name;
-            Introduce = introduce;
-        }
-
         [Required]
         [Unicode]
-        public string Name { get; set; }
+        public string Name { get; set; } = name;
 
         [Unicode]
-        public string? Introduce { get; set; }
+        public string? Introduce { get; set; } = introduce;
 
         public List<BookDisplay> Books { get; } = [];
     }

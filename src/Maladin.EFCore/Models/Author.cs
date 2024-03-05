@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Maladin.EFCore.Models
 {
     [Table("Author")]
-    public class Author(string name, string introduce) : Writer(name, introduce)
+    public class Author(string name, string? introduce) : Writer(name, introduce)
     {
     }
 }
