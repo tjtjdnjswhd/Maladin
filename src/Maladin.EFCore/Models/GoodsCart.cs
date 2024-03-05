@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Maladin.EFCore.Models
 {
     [Table("GoodsCart")]
-    public class GoodsCart : EntityBase
+    public class GoodsCart : EntityBase, IUserRelationEntity
     {
         public GoodsCart(int count, int userId, int goodsId)
         {

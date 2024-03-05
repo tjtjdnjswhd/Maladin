@@ -65,7 +65,7 @@ namespace Maladin.Api.Controllers.Entity
         {
             if (!await EntityAuthorizeOptions.BeforeReadAuthorize.Invoke(HttpContext))
             {
-                return User.Identity?.IsAuthenticated ?? false ? Forbid() : Unauthorized();
+                return User.IsAuthenticated() ? Forbid() : Unauthorized();
             }
 
             TEntity? entity;
@@ -92,7 +92,7 @@ namespace Maladin.Api.Controllers.Entity
         {
             if (!await EntityAuthorizeOptions.BeforeReadAuthorize.Invoke(HttpContext))
             {
-                ActionResult actionResult = User.Identity?.IsAuthenticated ?? false ? Forbid() : Unauthorized();
+                ActionResult actionResult = User.IsAuthenticated() ? Forbid() : Unauthorized();
                 actionResult.ExecuteResult(ControllerContext);
                 yield break;
             }
@@ -132,7 +132,7 @@ namespace Maladin.Api.Controllers.Entity
         {
             if (!await EntityAuthorizeOptions.CreateAuthorize.Invoke(HttpContext, dto))
             {
-                return User.Identity?.IsAuthenticated ?? false ? Forbid() : Unauthorized();
+                return User.IsAuthenticated() ? Forbid() : Unauthorized();
             }
 
             TEntity entity;
@@ -154,7 +154,7 @@ namespace Maladin.Api.Controllers.Entity
         {
             if (!await EntityAuthorizeOptions.UpdateAuthorize.Invoke(HttpContext, id, dto))
             {
-                return User.Identity?.IsAuthenticated ?? false ? Forbid() : Unauthorized();
+                return User.IsAuthenticated() ? Forbid() : Unauthorized();
             }
 
             TEntity entity;
@@ -176,7 +176,7 @@ namespace Maladin.Api.Controllers.Entity
         {
             if (!await EntityAuthorizeOptions.DeleteAuthorize.Invoke(HttpContext, id))
             {
-                return User.Identity?.IsAuthenticated ?? false ? Forbid() : Unauthorized();
+                return User.IsAuthenticated() ? Forbid() : Unauthorized();
             }
 
             try

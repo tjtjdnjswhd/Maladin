@@ -94,8 +94,7 @@ namespace Maladin.Api.Controllers
                 return new DbContextExceptionResult(e);
             }
 
-            Claim[] claims = _jwtService.GetClaims(claimInfo);
-            ClaimsIdentity identity = new(claims);
+            ClaimsIdentity identity = _jwtService.GetClaimsIdentity(claimInfo, await HttpContext.GetDefaultAuthenticationSchemeAsync());
 
             string accessToken = _jwtService.GetAccessToken(identity, _jwtOptions.SecureKey, _jwtOptions.AccessTokenExpiration, null);
             string refreshToken = _jwtService.GetRefreshToken(_jwtOptions.RefreshTokenByteLength);
@@ -208,8 +207,7 @@ namespace Maladin.Api.Controllers
                 return NotFound();
             }
 
-            Claim[] claims = _jwtService.GetClaims(claimInfo);
-            ClaimsIdentity identity = new(claims);
+            ClaimsIdentity identity = _jwtService.GetClaimsIdentity(claimInfo, await HttpContext.GetDefaultAuthenticationSchemeAsync());
 
             string newAccessToken = _jwtService.GetAccessToken(identity, _jwtOptions.SecureKey, _jwtOptions.AccessTokenExpiration, null);
             string newRefreshToken = _jwtService.GetRefreshToken(_jwtOptions.RefreshTokenByteLength);

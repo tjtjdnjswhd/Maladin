@@ -58,13 +58,20 @@ namespace Maladin.Services
             return false;
         }
 
-        public Claim[] GetClaims(ClaimInfo claimInfo) =>
-                [new Claim(SubType, claimInfo.UserId.ToString()),
-                new Claim(NameType, claimInfo.UserName),
-                new Claim(EmailType, claimInfo.UserEmail),
-                new Claim(AudienceType, claimInfo.Audience),
-                new Claim(IssuerType, claimInfo.Issuer),
-                new Claim(RoleType, string.Join(',', claimInfo.Roles))];
+        public ClaimsIdentity GetClaimsIdentity(ClaimInfo claimInfo, string? authenticationType)
+        {
+            Claim[] claims =
+                [
+                    new Claim(SubType, claimInfo.UserId.ToString()),
+                    new Claim(NameType, claimInfo.UserName),
+                    new Claim(EmailType, claimInfo.UserEmail),
+                    new Claim(AudienceType, claimInfo.Audience),
+                    new Claim(IssuerType, claimInfo.Issuer),
+                    new Claim(RoleType, string.Join(',', claimInfo.Roles))
+                ];
+
+            return new ClaimsIdentity(claims, authenticationType, NameType, RoleType);
+        }
 
         public bool TryGetUserId(IEnumerable<Claim> claims, out int userId)
         {

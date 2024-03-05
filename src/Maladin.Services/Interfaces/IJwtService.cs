@@ -9,7 +9,7 @@ namespace Maladin.Services.Interfaces
         string GetAccessToken(ClaimsIdentity identity, string secureKey, TimeSpan? tokenExpiration, DateTime? notBefore);
         string GetRefreshToken(int byteLength);
         bool TryGetJwt(string accessToken, [NotNullWhen(true)] out JwtSecurityToken? result);
-        Claim[] GetClaims(ClaimInfo claimInfo);
+        ClaimsIdentity GetClaimsIdentity(ClaimInfo claimInfo, string? authenticationType);
         bool TryGetUserId(IEnumerable<Claim> claims, out int userId);
         bool TryGetName(IEnumerable<Claim> claims, [NotNullWhen(true)] out string? name);
         bool TryGetEmail(IEnumerable<Claim> claims, [NotNullWhen(true)] out string? email);

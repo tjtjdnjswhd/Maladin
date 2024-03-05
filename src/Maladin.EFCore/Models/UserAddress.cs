@@ -7,7 +7,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Maladin.EFCore.Models
 {
     [Table("UserAddress")]
-    public class UserAddress : EntityBase
+    public class UserAddress : EntityBase, IUserRelationEntity
     {
         public UserAddress(string address, string postCode, bool isDefault, int userId)
         {

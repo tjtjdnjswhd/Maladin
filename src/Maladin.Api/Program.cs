@@ -27,6 +27,7 @@ else
 
 builder.ConfigureAuthentication(JWT_SECTION, CreateKey);
 builder.ConfigureAuthorization();
+builder.ConfigureEntityControllerAuthorization();
 
 builder.Services.AddDistributedMemoryCache();
 

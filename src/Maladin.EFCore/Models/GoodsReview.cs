@@ -8,7 +8,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Maladin.EFCore.Models
 {
     [Table("GoodsReview")]
-    public class GoodsReview : EntityBase
+    public class GoodsReview : EntityBase, IUserRelationEntity
     {
         public GoodsReview(string? content, int rating, int userId, int goodsId)
         {

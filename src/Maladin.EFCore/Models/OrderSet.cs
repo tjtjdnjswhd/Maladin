@@ -9,7 +9,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Maladin.EFCore.Models
 {
     [Table("OrderSet")]
-    public class OrderSet : EntityBase
+    public class OrderSet : EntityBase, IUserRelationEntity
     {
         public OrderSet(int usedPoints, string address, string postCode, string receiverName, string? message, string phoneNumber, int userId)
         {

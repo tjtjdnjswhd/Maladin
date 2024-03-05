@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Maladin.EFCore.Models
 {
     [Table("OAuthId")]
-    public class OAuthId : EntityBase
+    public class OAuthId : EntityBase, IUserRelationEntity
     {
         public OAuthId(string nameIdentifier, OAuthProvider provider, User user)
         {

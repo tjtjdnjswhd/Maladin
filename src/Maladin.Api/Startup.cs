@@ -11,16 +11,18 @@ using Maladin.Api.Models.Dtos.Read.Abstractions;
 using Maladin.Api.Models.Dtos.Update;
 using Maladin.Api.Models.Dtos.Update.Abstractions;
 using Maladin.Api.Options;
+using Maladin.EFCore;
 using Maladin.EFCore.Models;
 using Maladin.EFCore.Models.Abstractions;
 using Maladin.Services.Extensions;
+using Maladin.Services.Interfaces;
 
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace Maladin.Api
@@ -118,61 +120,196 @@ namespace Maladin.Api
         {
             builder.Services.AddEntityAuthorizeOptions<AuthorController, Author, AuthorRead, AuthorCreate, AuthorUpdate>(options =>
             {
-                options.UpdateAuthorize = GetUpdateAdminAllow;
-                options.CreateAuthorize = GetCreateAdminAllow;
-                options.DeleteAuthorize = GetDeleteAdminAllow;
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.UpdateAuthorize = (context, _, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.DeleteAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
             });
 
             builder.Services.AddEntityAuthorizeOptions<BookController, Book, BookRead, BookCreate, BookUpdate>(options =>
             {
-                options.BeforeReadAuthorize = GetBeforeReadAdminAllow;
-                options.CreateAuthorize = GetCreateAdminAllow;
-                options.UpdateAuthorize = GetUpdateAdminAllow;
-                options.DeleteAuthorize = GetDeleteAdminAllow;
+                options.BeforeReadAuthorize = context => ValueTask.FromResult(context.User.IsAdmin());
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.UpdateAuthorize = (context, _, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.DeleteAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
             });
 
             builder.Services.AddEntityAuthorizeOptions<DeliveryController, Delivery, DeliveryRead, DeliveryCreate, DeliveryUpdate>(options =>
             {
-                options.CreateAuthorize = GetCreateAdminAllow;
-                options.UpdateAuthorize = GetUpdateAdminAllow;
-                options.DeleteAuthorize = GetDeleteAdminAllow;
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.UpdateAuthorize = (context, _, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.DeleteAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
             });
 
             builder.Services.AddEntityAuthorizeOptions<GoodsCartController, GoodsCart, GoodsCartRead, GoodsCartCreate, GoodsCartUpdate>(options =>
             {
-                options.ReadAuthorize = (context, read) => ValueTask.FromResult(IsAdmin(context.User) || context.User.FindFirstValue(JwtRegisteredClaimNames.Sub) is string sub && read.UserId == int.Parse(sub));
-                options.CreateAuthorize = (context, create) => ValueTask.FromResult(IsAdmin(context.User) || context.User.FindFirstValue(JwtRegisteredClaimNames.Sub) is string sub && create.UserId == int.Parse(sub));
-                options.UpdateAuthorize = (context, _, update) =>
+                options.BeforeReadAuthorize = context => ValueTask.FromResult(context.User.IsAuthenticated());
+                options.ReadAuthorize = async (context, read) => context.User.IsAdmin() || await IsUserIdMatch<GoodsCart>(context, read.Id);
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAuthenticated());
+                options.UpdateAuthorize = async (context, entityId, _) => context.User.IsAdmin() || await IsUserIdMatch<GoodsCart>(context, entityId);
+                options.DeleteAuthorize = async (context, entityId) => context.User.IsAdmin() || await IsUserIdMatch<GoodsCart>(context, entityId);
             });
 
-            builder.Services.AddEntityAuthorizeOptions<GoodsCategoryController, GoodsCategory, GoodsCategoryRead, GoodsCategoryCreate, GoodsCategoryUpdate>();
-            builder.Services.AddEntityAuthorizeOptions<GoodsController, Goods, GoodsRead, GoodsCreate, GoodsUpdate>();
-            builder.Services.AddEntityAuthorizeOptions<GoodsOrderController, GoodsOrder, GoodsOrderRead, GoodsOrderCreate, GoodsOrderUpdate>();
-            builder.Services.AddEntityAuthorizeOptions<GoodsReviewController, GoodsReview, GoodsReviewRead, GoodsReviewCreate, GoodsReviewUpdate>();
-            builder.Services.AddEntityAuthorizeOptions<MembershipController, Membership, MembershipRead, MembershipCreate, MembershipUpdate>();
-            builder.Services.AddEntityAuthorizeOptions<OAuthIdController, OAuthId, OAuthIdRead, OAuthIdCreate, OAuthIdUpdate>();
-            builder.Services.AddEntityAuthorizeOptions<OAuthProviderController, OAuthProvider, OAuthProviderRead, OAuthProviderCreate, OAuthProviderUpdate>();
-            builder.Services.AddEntityAuthorizeOptions<OrderSetController, OrderSet, OrderSetRead, OrderSetCreate, OrderSetUpdate>();
-            builder.Services.AddEntityAuthorizeOptions<PaymentController, Payment, PaymentRead, PaymentCreate, PaymentUpdate>();
-            builder.Services.AddEntityAuthorizeOptions<PointController, Point, PointRead, PointCreate, PointUpdate>();
-            builder.Services.AddEntityAuthorizeOptions<PublisherController, Publisher, PublisherRead, PublisherCreate, PublisherUpdate>();
-            builder.Services.AddEntityAuthorizeOptions<RoleController, Role, RoleRead, RoleCreate, RoleUpdate>();
-            builder.Services.AddEntityAuthorizeOptions<TranslatorController, Translator, TranslatorRead, TranslatorCreate, TranslatorUpdate>();
-            builder.Services.AddEntityAuthorizeOptions<UserAddressController, UserAddress, UserAddressRead, UserAddressCreate, UserAddressUpdate>();
-            builder.Services.AddEntityAuthorizeOptions<UserController, User, UserRead, UserCreate, UserUpdate>();
+            builder.Services.AddEntityAuthorizeOptions<GoodsCategoryController, GoodsCategory, GoodsCategoryRead, GoodsCategoryCreate, GoodsCategoryUpdate>(options =>
+            {
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.UpdateAuthorize = (context, _, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.DeleteAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+            });
+
+            builder.Services.AddEntityAuthorizeOptions<GoodsController, Goods, GoodsRead, GoodsCreate, GoodsUpdate>(options =>
+            {
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.UpdateAuthorize = (context, _, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.DeleteAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+            });
+
+            builder.Services.AddEntityAuthorizeOptions<GoodsOrderController, GoodsOrder, GoodsOrderRead, GoodsOrderCreate, GoodsOrderUpdate>(options =>
+            {
+                static async Task<bool> IsUserHasGoodsOrder(HttpContext httpContext, int entityId)
+                {
+                    using var scope = httpContext.RequestServices.CreateScope();
+                    IJwtService jwtService = scope.ServiceProvider.GetRequiredService<IJwtService>();
+                    if (!jwtService.TryGetUserId(httpContext.User.Claims, out int userId))
+                    {
+                        return false;
+                    }
+
+                    MaladinDbContext dbContext = scope.ServiceProvider.GetRequiredService<MaladinDbContext>();
+                    return await dbContext.GoodsOrders.AnyAsync(p => p.Id == entityId && p.OrderSet.UserId == userId);
+                }
+
+                options.BeforeReadAuthorize = context => ValueTask.FromResult(context.User.IsAuthenticated());
+                options.ReadAuthorize = async (context, read) => context.User.IsAdmin() || await IsUserHasGoodsOrder(context, read.Id);
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAuthenticated());
+                options.UpdateAuthorize = async (context, entityId, update) => context.User.IsAdmin() || await IsUserHasGoodsOrder(context, entityId);
+                options.DeleteAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+            });
+
+            builder.Services.AddEntityAuthorizeOptions<GoodsReviewController, GoodsReview, GoodsReviewRead, GoodsReviewCreate, GoodsReviewUpdate>(options =>
+            {
+                options.ReadAuthorize = async (context, read) => context.User.IsAdmin() || await IsUserIdMatch<GoodsCart>(context, read.Id);
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAuthenticated());
+                options.UpdateAuthorize = async (context, entityId, _) => context.User.IsAdmin() || await IsUserIdMatch<GoodsCart>(context, entityId);
+                options.DeleteAuthorize = async (context, entityId) => context.User.IsAdmin() || await IsUserIdMatch<GoodsCart>(context, entityId);
+            });
+
+
+            builder.Services.AddEntityAuthorizeOptions<MembershipController, Membership, MembershipRead, MembershipCreate, MembershipUpdate>(options =>
+            {
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.UpdateAuthorize = (context, _, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.DeleteAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+            });
+
+            builder.Services.AddEntityAuthorizeOptions<OAuthIdController, OAuthId, OAuthIdRead, OAuthIdCreate, OAuthIdUpdate>(options =>
+            {
+                options.BeforeReadAuthorize = context => ValueTask.FromResult(context.User.IsAuthenticated());
+                options.ReadAuthorize = async (context, read) => context.User.IsAdmin() || await IsUserIdMatch<OAuthId>(context, read.Id);
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAuthenticated());
+                options.UpdateAuthorize = async (context, entityId, _) => context.User.IsAdmin() || await IsUserIdMatch<OAuthId>(context, entityId);
+                options.DeleteAuthorize = async (context, entityId) => context.User.IsAdmin() || await IsUserIdMatch<OAuthId>(context, entityId);
+            });
+
+            builder.Services.AddEntityAuthorizeOptions<OAuthProviderController, OAuthProvider, OAuthProviderRead, OAuthProviderCreate, OAuthProviderUpdate>(options =>
+            {
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.UpdateAuthorize = (context, _, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.DeleteAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+            });
+
+            builder.Services.AddEntityAuthorizeOptions<OrderSetController, OrderSet, OrderSetRead, OrderSetCreate, OrderSetUpdate>(options =>
+            {
+                options.BeforeReadAuthorize = context => ValueTask.FromResult(context.User.IsAuthenticated());
+                options.ReadAuthorize = async (context, read) => context.User.IsAdmin() || await IsUserIdMatch<OrderSet>(context, read.Id);
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAuthenticated());
+                options.UpdateAuthorize = async (context, entityId, _) => context.User.IsAdmin() || await IsUserIdMatch<OrderSet>(context, entityId);
+                options.DeleteAuthorize = (context, entityId) => ValueTask.FromResult(context.User.IsAdmin());
+            });
+
+            builder.Services.AddEntityAuthorizeOptions<PaymentController, Payment, PaymentRead, PaymentCreate, PaymentUpdate>(options =>
+            {
+                static async Task<bool> IsUserHasPayment(HttpContext httpContext, int entityId)
+                {
+                    using var scope = httpContext.RequestServices.CreateScope();
+                    IJwtService jwtService = scope.ServiceProvider.GetRequiredService<IJwtService>();
+                    if (!jwtService.TryGetUserId(httpContext.User.Claims, out int userId))
+                    {
+                        return false;
+                    }
+
+                    MaladinDbContext dbContext = scope.ServiceProvider.GetRequiredService<MaladinDbContext>();
+                    return await dbContext.Payments.AnyAsync(p => p.Id == entityId && p.Order.UserId == userId);
+                }
+
+                options.BeforeReadAuthorize = context => ValueTask.FromResult(context.User.IsAuthenticated());
+                options.ReadAuthorize = async (context, read) => context.User.IsAdmin() || await IsUserHasPayment(context, read.Id);
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAuthenticated());
+                options.UpdateAuthorize = async (context, entityId, update) => context.User.IsAdmin() || await IsUserHasPayment(context, entityId);
+                options.DeleteAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+            });
+
+            builder.Services.AddEntityAuthorizeOptions<PointController, Point, PointRead, PointCreate, PointUpdate>(options =>
+            {
+                options.BeforeReadAuthorize = context => ValueTask.FromResult(context.User.IsAuthenticated());
+                options.ReadAuthorize = async (context, read) => context.User.IsAdmin() || await IsUserIdMatch<Point>(context, read.Id);
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAuthenticated());
+                options.UpdateAuthorize = async (context, entityId, _) => context.User.IsAdmin() || await IsUserIdMatch<Point>(context, entityId);
+                options.DeleteAuthorize = (context, entityId) => ValueTask.FromResult(context.User.IsAdmin());
+            });
+
+            builder.Services.AddEntityAuthorizeOptions<PublisherController, Publisher, PublisherRead, PublisherCreate, PublisherUpdate>(options =>
+            {
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.UpdateAuthorize = (context, _, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.DeleteAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+            });
+
+            builder.Services.AddEntityAuthorizeOptions<RoleController, Role, RoleRead, RoleCreate, RoleUpdate>(options =>
+            {
+                options.BeforeReadAuthorize = context => ValueTask.FromResult(context.User.IsAdmin());
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.UpdateAuthorize = (context, _, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.DeleteAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+            });
+
+            builder.Services.AddEntityAuthorizeOptions<TranslatorController, Translator, TranslatorRead, TranslatorCreate, TranslatorUpdate>(options =>
+            {
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.UpdateAuthorize = (context, _, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.DeleteAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+            });
+
+            builder.Services.AddEntityAuthorizeOptions<UserAddressController, UserAddress, UserAddressRead, UserAddressCreate, UserAddressUpdate>(options =>
+            {
+                options.BeforeReadAuthorize = context => ValueTask.FromResult(context.User.IsAuthenticated());
+                options.ReadAuthorize = async (context, read) => context.User.IsAdmin() || await IsUserIdMatch<UserAddress>(context, read.Id);
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAuthenticated());
+                options.UpdateAuthorize = async (context, entityId, _) => context.User.IsAdmin() || await IsUserIdMatch<UserAddress>(context, entityId);
+                options.DeleteAuthorize = async (context, entityId) => context.User.IsAdmin() || await IsUserIdMatch<UserAddress>(context, entityId);
+            });
+
+            builder.Services.AddEntityAuthorizeOptions<UserController, User, UserRead, UserCreate, UserUpdate>(options =>
+            {
+                options.ReadAuthorize = (context, read) => ValueTask.FromResult(context.User.IsAdmin() || context.TryGetUserId(out int userId) && read.Id == userId);
+                options.CreateAuthorize = (context, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.UpdateAuthorize = (context, entityId, _) => ValueTask.FromResult(context.User.IsAdmin());
+                options.DeleteAuthorize = (context, entityId) => ValueTask.FromResult(context.User.IsAdmin());
+            });
+
+            return builder;
         }
 
-        private static ValueTask<bool> GetBeforeReadAdminAllow(HttpContext context) => ValueTask.FromResult(IsAdmin(context.User));
-
-        private static ValueTask<bool> GetCreateAdminAllow<TCreate>(HttpContext context, TCreate create) => ValueTask.FromResult(IsAdmin(context.User));
-
-        private static ValueTask<bool> GetUpdateAdminAllow<TUpdate>(HttpContext context, int id, TUpdate update) => ValueTask.FromResult(IsAdmin(context.User));
-
-        private static ValueTask<bool> GetDeleteAdminAllow(HttpContext context, int id) => ValueTask.FromResult(IsAdmin(context.User));
-
-        private static bool IsAdmin(ClaimsPrincipal user)
+        private static async Task<bool> IsUserIdMatch<T>(HttpContext context, int entityId)
+            where T : EntityBase, IUserRelationEntity
         {
-            return user.Identity is { AuthenticationType: JwtBearerDefaults.AuthenticationScheme, IsAuthenticated: true } && user.IsInRole(AuthorizeRole.Admin);
+            if (!context.TryGetUserId(out int userId))
+            {
+                return false;
+            }
+
+            using var scope = context.RequestServices.CreateScope();
+            MaladinDbContext dbContext = scope.ServiceProvider.GetRequiredService<MaladinDbContext>();
+            return await dbContext.IsUserHaveEntityAsync<T>(entityId, userId, context.RequestAborted);
         }
     }
 }
