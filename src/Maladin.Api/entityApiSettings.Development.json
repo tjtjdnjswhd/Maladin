@@ -1,0 +1,76 @@
+{
+  "Entity": {
+    "Default": {
+      "MaxReadCount": 100
+    },
+    "Author": {
+
+    },
+    "Book": {
+
+    },
+    "Delivery": {
+
+    },
+    "GoodsCart": {
+
+    },
+    "GoodsCategory": {
+
+    },
+    "Goods": {
+
+    },
+    "GoodsOrder": {
+
+    },
+    "GoodsReview": {
+      "Property": {
+        "Rating": {
+          "Min": 1,
+          "Max": 5
+        }
+      }
+    },
+    "Membership": {
+
+    },
+    "OAuthId": {
+
+    },
+    "OAuthProvider": {
+
+    },
+    "OrderSet": {
+
+    },
+    "Payment": {
+
+    },
+    "Point": {
+
+    },
+    "Publisher": {
+
+    },
+    "Role": {
+
+    },
+    "Translator": {
+
+    },
+    "UserAddress": {
+
+    },
+    "User": {
+      "Property": {
+        "Name": {
+          "Length": {
+            "Min": 4,
+            "Max": 20
+          }
+        }
+      }
+    }
+  }
+}

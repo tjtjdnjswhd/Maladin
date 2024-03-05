@@ -1,4 +1,8 @@
-﻿namespace Maladin.Api.Models.Dtos.Update
+﻿using Maladin.EFCore.Models.Enums;
+
+using System.ComponentModel.DataAnnotations;
+
+namespace Maladin.Api.Models.Dtos.Update
 {
     public class PaymentUpdate
     {
@@ -8,6 +12,7 @@
 
         public int? BalanceAmount { get; set; }
 
+        [EnumDataType(typeof(EPaymentStatus))]
         public required string Status { get; set; }
     }
 }

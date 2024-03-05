@@ -10,7 +10,7 @@ namespace Maladin.EFCore.Models
     [Table("GoodsReview")]
     public class GoodsReview : EntityBase
     {
-        public GoodsReview(string content, int rating, int userId, int goodsId)
+        public GoodsReview(string? content, int rating, int userId, int goodsId)
         {
             Content = content;
             Rating = rating;
@@ -18,7 +18,7 @@ namespace Maladin.EFCore.Models
             GoodsId = goodsId;
         }
 
-        public GoodsReview(string content, int rating, User user, Goods goods)
+        public GoodsReview(string? content, int rating, User user, Goods goods)
         {
             Content = content;
             Rating = rating;
@@ -26,9 +26,8 @@ namespace Maladin.EFCore.Models
             Goods = goods;
         }
 
-        [Required]
         [Unicode]
-        public string Content { get; set; }
+        public string? Content { get; set; }
 
         [Required]
         public int Rating { get; set; }

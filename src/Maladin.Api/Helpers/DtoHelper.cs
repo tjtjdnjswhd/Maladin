@@ -1,10 +1,11 @@
-﻿using Maladin.Api.Models.Dtos.Create;
+﻿using Maladin.Api.Models.Dtos;
+using Maladin.Api.Models.Dtos.Create;
 using Maladin.Api.Models.Dtos.Read;
 using Maladin.Api.Models.Dtos.Update;
 
 using System.ComponentModel;
 
-namespace Maladin.Api.Models.Dtos
+namespace Maladin.Api.Helpers
 {
     public static class DtoHelper
     {

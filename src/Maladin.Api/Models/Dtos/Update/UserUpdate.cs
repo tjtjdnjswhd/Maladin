@@ -1,11 +1,16 @@
-﻿using System.Net;
+﻿using Maladin.Api.Validation;
+
+using System.ComponentModel.DataAnnotations;
+using System.Net;
 
 namespace Maladin.Api.Models.Dtos.Update
 {
     public class UserUpdate
     {
+        [UserName]
         public required string Name { get; set; }
 
+        [EmailAddress]
         public required string Email { get; set; }
 
         public DateTimeOffset? LastLoginDate { get; set; }
@@ -16,6 +21,7 @@ namespace Maladin.Api.Models.Dtos.Update
 
         public required bool IsLocked { get; set; }
 
+        [EntityId]
         public required int MembershipId { get; set; }
     }
 }

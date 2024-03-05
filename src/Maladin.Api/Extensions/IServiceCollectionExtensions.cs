@@ -6,14 +6,14 @@ namespace Maladin.Api.Extensions
 {
     public static class IServiceCollectionExtensions
     {
-        public static IServiceCollection AddEntityAuthorizeOptions<TEntityController, TEntity, TReadDto, TCreateDto, TUpdateDto>(this IServiceCollection services, Action<EntityAuthorizeOptions<TEntity, TReadDto, TCreateDto, TUpdateDto>> action)
+        public static IServiceCollection AddEntityAuthorizeOptions<TEntityController, TEntity, TReadDto, TCreateDto, TUpdateDto>(this IServiceCollection services, Action<EntityAuthorizeOptions<TEntity, TReadDto, TCreateDto, TUpdateDto>> options)
             where TEntityController : EntityControllerBase<TEntity, TReadDto, TCreateDto, TUpdateDto>
             where TEntity : EntityBase
             where TReadDto : class
             where TCreateDto : class
             where TUpdateDto : class
         {
-            services.AddOptions<EntityAuthorizeOptions<TEntity, TReadDto, TCreateDto, TUpdateDto>>().Configure(action);
+            services.AddOptions<EntityAuthorizeOptions<TEntity, TReadDto, TCreateDto, TUpdateDto>>().Configure(options);
             return services;
         }
 

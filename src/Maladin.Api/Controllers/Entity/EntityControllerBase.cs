@@ -5,6 +5,7 @@ using LinqExpressionParser.AspNetCore.Results;
 
 using Maladin.Api.ActionResults;
 using Maladin.Api.Extensions;
+using Maladin.Api.Helpers;
 using Maladin.Api.Models;
 using Maladin.Api.Options;
 using Maladin.EFCore;
@@ -27,7 +28,7 @@ namespace Maladin.Api.Controllers.Entity
         where TCreate : class
         where TUpdate : class
     {
-        protected int MaxReadCount { get; set; }
+        protected int MaxReadCount { get; }
 
         protected MaladinDbContext DbContext { get; }
 
@@ -48,15 +49,14 @@ namespace Maladin.Api.Controllers.Entity
             EntityAuthorizeOptions = entityAuthorizeOptions.Value;
 
             string entityName = typeof(TEntity).Name;
-            int maxReadCount = configuration.GetValue($"EntityApi:{entityName}:MaxReadCount", 0);
-            if (maxReadCount == 0)
+            MaxReadCount = EntityConfigurationHelper.GetMaxReadCount(configuration, entityName);
+            if (MaxReadCount == 0)
             {
-                maxReadCount = configuration.GetValue("EntityApi:Default:MaxReadCount", 0);
-                if (maxReadCount == 0)
+                MaxReadCount = EntityConfigurationHelper.GetMaxReadCount(configuration);
+                if (MaxReadCount == 0)
                 {
                     throw new ArgumentException("Default MaxReadCount value required");
                 }
-                MaxReadCount = maxReadCount;
             }
         }
 

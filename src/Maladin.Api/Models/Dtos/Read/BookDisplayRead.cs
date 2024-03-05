@@ -1,25 +1,32 @@
 ﻿using Maladin.Api.Models.Dtos.Read.Abstractions;
+using Maladin.Api.Validation;
+
+using System.ComponentModel.DataAnnotations;
 
 namespace Maladin.Api.Models.Dtos.Read
 {
     public class BookDisplayRead : GoodsRead
     {
+        [Required(AllowEmptyStrings = false)]
         public required string PaperSize { get; set; }
 
+        [Range(1, int.MaxValue)]
         public required int PageCount { get; set; }
 
-        public string? CoverUrl { get; set; }
+        public Uri? CoverUrl { get; set; }
 
         public required DateTimeOffset PublishedAt { get; set; }
 
-        public required GoodsCategoryRead Category { get; set; }
+        [EntityId]
+        public required int BookId { get; set; }
 
-        public required BookRead Book { get; set; }
+        [EntityId]
+        public required int AuthorId { get; set; }
 
-        public required AuthorRead Author { get; set; }
+        [EntityId]
+        public required int? TranslatorId { get; set; }
 
-        public required TranslatorRead? Translator { get; set; }
-
-        public required PublisherRead Publisher { get; set; }
+        [EntityId]
+        public required int PublisherId { get; set; }
     }
 }

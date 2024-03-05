@@ -1,13 +1,19 @@
-﻿using System.Net;
+﻿using Maladin.Api.Validation;
+
+using System.ComponentModel.DataAnnotations;
+using System.Net;
 
 namespace Maladin.Api.Models.Dtos.Read
 {
     public class UserRead
     {
+        [EntityId]
         public required int Id { get; set; }
 
+        [UserName]
         public required string Name { get; set; }
 
+        [EmailAddress]
         public required string Email { get; set; }
 
         public required DateTimeOffset SignupAt { get; set; }
@@ -22,6 +28,7 @@ namespace Maladin.Api.Models.Dtos.Read
 
         public required bool IsLocked { get; set; }
 
+        [EntityId]
         public required int MembershipId { get; set; }
     }
 }
