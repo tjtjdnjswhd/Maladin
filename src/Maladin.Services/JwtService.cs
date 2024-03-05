@@ -13,11 +13,18 @@ namespace Maladin.Services
 {
     public class JwtService(IOptions<JwtServiceOptions> options) : IJwtService
     {
+        public const string SubType = JwtRegisteredClaimNames.Sub;
+        public const string NameType = JwtRegisteredClaimNames.Name;
+        public const string EmailType = JwtRegisteredClaimNames.Email;
+        public const string AudienceType = JwtRegisteredClaimNames.Aud;
+        public const string IssuerType = JwtRegisteredClaimNames.Iss;
+        public const string RoleType = ClaimTypes.Role;
+
         private static readonly JwtSecurityTokenHandler TokenHandler = new();
 
         private readonly JwtServiceOptions _options = options.Value;
 
-        public string GenerateToken(ClaimsIdentity identity, string secureKey, TimeSpan? tokenExpiration, DateTime? notBefore)
+        public string GetAccessToken(ClaimsIdentity identity, string secureKey, TimeSpan? tokenExpiration, DateTime? notBefore)
         {
             SecurityKey key = _options.GenerateSecurityKey(secureKey);
             SigningCredentials credentials = new(key, _options.SecurityAlgorithm);
@@ -39,7 +46,7 @@ namespace Maladin.Services
             return Convert.ToBase64String(randomNumber);
         }
 
-        public bool TryGetToken(string accessToken, [NotNullWhen(true)] out JwtSecurityToken? result)
+        public bool TryGetJwt(string accessToken, [NotNullWhen(true)] out JwtSecurityToken? result)
         {
             if (TokenHandler.CanReadToken(accessToken))
             {
@@ -49,6 +56,50 @@ namespace Maladin.Services
 
             result = null;
             return false;
+        }
+
+        public Claim[] GetClaims(ClaimInfo claimInfo) =>
+                [new Claim(SubType, claimInfo.UserId.ToString()),
+                new Claim(NameType, claimInfo.UserName),
+                new Claim(EmailType, claimInfo.UserEmail),
+                new Claim(AudienceType, claimInfo.Audience),
+                new Claim(IssuerType, claimInfo.Issuer),
+                new Claim(RoleType, string.Join(',', claimInfo.Roles))];
+
+        public bool TryGetUserId(IEnumerable<Claim> claims, out int userId)
+        {
+            Claim? sub = claims.FirstOrDefault(c => c.Type == SubType);
+            return int.TryParse(sub?.Value, out userId);
+        }
+
+        public bool TryGetName(IEnumerable<Claim> claims, [NotNullWhen(true)] out string? name)
+        {
+            Claim? claim = claims.FirstOrDefault(c => c.Type == NameType);
+            return (name = claim?.Value) is not null;
+        }
+
+        public bool TryGetEmail(IEnumerable<Claim> claims, [NotNullWhen(true)] out string? email)
+        {
+            Claim? claim = claims.FirstOrDefault(c => c.Type == EmailType);
+            return (email = claim?.Value) is not null;
+        }
+
+        public bool TryGetAudience(IEnumerable<Claim> claims, [NotNullWhen(true)] out string? audience)
+        {
+            Claim? claim = claims.FirstOrDefault(c => c.Type == AudienceType);
+            return (audience = claim?.Value) is not null;
+        }
+
+        public bool TryGetIssuer(IEnumerable<Claim> claims, [NotNullWhen(true)] out string? issuer)
+        {
+            Claim? claim = claims.FirstOrDefault(c => c.Type == IssuerType);
+            return (issuer = claim?.Value) is not null;
+        }
+
+        public bool TryGetRoles(IEnumerable<Claim> claims, [NotNullWhen(true)] out string[]? roles)
+        {
+            Claim? claim = claims.FirstOrDefault(c => c.Type == RoleType);
+            return (roles = claim?.Value.Split(',', options: StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)) is not null;
         }
     }
 }
