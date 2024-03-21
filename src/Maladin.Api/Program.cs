@@ -16,6 +16,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+});
+
 if (builder.Environment.IsDevelopment())
 {
     builder.Configuration.AddJsonFile("entityApiSettings.Development.json", false, true);
@@ -25,19 +30,19 @@ else
     builder.Configuration.AddJsonFile("entityApiSettings.json", false, true);
 }
 
-builder.ConfigureAuthentication(JWT_SECTION, CreateKey);
-builder.ConfigureAuthorization();
-builder.ConfigureEntityControllerAuthorization();
-
-builder.Services.AddDistributedMemoryCache();
-
-builder.Services.AddPortoneClient();
-
 string connectionString = builder.Configuration.GetConnectionString("Default") ?? throw new NullReferenceException();
 builder.Services.AddDbContextPool<MaladinDbContext>(options =>
 {
     options.UseSqlServer(connectionString);
 });
+
+builder.ConfigureAuthentication(JWT_SECTION, CreateKey);
+builder.ConfigureAuthorization();
+builder.ConfigureEntityOptions();
+
+builder.Services.AddDistributedMemoryCache();
+
+builder.Services.AddPortoneClient();
 
 var app = builder.Build();
 

@@ -1,4 +1,4 @@
-﻿using Maladin.Api.Helpers;
+﻿using Maladin.Api.Services;
 
 using System.ComponentModel.DataAnnotations;
 
@@ -15,7 +15,10 @@ namespace Maladin.Api.Validation
                 return ValidationResult.Success;
             }
 
-            (int min, int max) range = EntityConfigurationHelper.GetGoodsReviewRatingRange(validationContext.GetRequiredService<IConfiguration>());
+            using var scope = validationContext.CreateScope();
+            IEntityConfigurationService entityConfiguration = scope.ServiceProvider.GetRequiredService<IEntityConfigurationService>();
+
+            (int min, int max) range = entityConfiguration.GetGoodsReviewRatingRange();
             if (range == default)
             {
                 return ValidationResult.Success;

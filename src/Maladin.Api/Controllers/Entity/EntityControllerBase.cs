@@ -1,21 +1,22 @@
 ﻿using AutoMapper;
-using AutoMapper.EntityFrameworkCore;
 
 using LinqExpressionParser.AspNetCore.Results;
 
 using Maladin.Api.ActionResults;
 using Maladin.Api.Extensions;
-using Maladin.Api.Helpers;
 using Maladin.Api.Models;
+using Maladin.Api.Models.Dtos.Read.Abstractions;
 using Maladin.Api.Options;
+using Maladin.Api.Services;
 using Maladin.EFCore;
 using Maladin.EFCore.Models.Abstractions;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Options;
 
-using System.Reflection;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 namespace Maladin.Api.Controllers.Entity
@@ -24,12 +25,10 @@ namespace Maladin.Api.Controllers.Entity
     [ApiController]
     public abstract class EntityControllerBase<TEntity, TRead, TCreate, TUpdate> : ControllerBase
         where TEntity : EntityBase
-        where TRead : class
+        where TRead : ReadBase
         where TCreate : class
         where TUpdate : class
     {
-        protected int MaxReadCount { get; }
-
         protected MaladinDbContext DbContext { get; }
 
         protected DbSet<TEntity> DbSet { get; }
@@ -38,25 +37,32 @@ namespace Maladin.Api.Controllers.Entity
 
         protected ILogger Logger { get; }
 
+        protected int MaxReadCount { get; }
+
+        protected CrudOptions<TEntity, TRead, TCreate, TUpdate> CrudOptions { get; }
+
         protected EntityAuthorizeOptions<TEntity, TRead, TCreate, TUpdate> EntityAuthorizeOptions { get; }
 
-        protected EntityControllerBase(MaladinDbContext dbContext, IMapper mapper, ILogger logger, IConfiguration configuration, IOptions<EntityAuthorizeOptions<TEntity, TRead, TCreate, TUpdate>> entityAuthorizeOptions)
+        protected EntityControllerBase(
+            MaladinDbContext dbContext,
+            IMapper mapper,
+            ILogger logger,
+            IEntityConfigurationService entityConfiguration,
+            IOptions<CrudOptions<TEntity, TRead, TCreate, TUpdate>> crudOptions,
+            IOptions<EntityAuthorizeOptions<TEntity, TRead, TCreate, TUpdate>> authorizeOptions)
         {
             DbContext = dbContext;
             DbSet = DbContext.Set<TEntity>();
             Mapper = mapper;
             Logger = logger;
-            EntityAuthorizeOptions = entityAuthorizeOptions.Value;
+            CrudOptions = crudOptions.Value;
+            EntityAuthorizeOptions = authorizeOptions.Value;
 
             string entityName = typeof(TEntity).Name;
-            MaxReadCount = EntityConfigurationHelper.GetMaxReadCount(configuration, entityName);
+            MaxReadCount = entityConfiguration.GetMaxReadCount(entityName);
             if (MaxReadCount == 0)
             {
-                MaxReadCount = EntityConfigurationHelper.GetMaxReadCount(configuration);
-                if (MaxReadCount == 0)
-                {
-                    throw new ArgumentException("Default MaxReadCount value required");
-                }
+                throw new ArgumentException("Default MaxReadCount value required");
             }
         }
 
@@ -68,27 +74,29 @@ namespace Maladin.Api.Controllers.Entity
                 return User.IsAuthenticated() ? Forbid() : Unauthorized();
             }
 
-            TEntity? entity;
+            Expression<Func<TEntity, TRead>> readSelectorExp = CrudOptions.EntityToReadExpression.Invoke(HttpContext);
+            Expression<Func<TRead, TRead>> readQueryExp = CrudOptions.ReadServerQueryExpression.Invoke(HttpContext);
+            TRead? read;
             try
             {
-                entity = await DbSet.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+                IQueryable<TEntity> query = DbSet.QueryByDtoExpression(Mapper, includes: CrudOptions.IncludeExpressions.Select(e => e.Invoke(HttpContext)));
+                read = await query.Select(readSelectorExp).Select(readQueryExp).FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
             }
             catch (Exception e)
             {
                 return new DbContextExceptionResult(e);
             }
 
-            if (entity is null)
+            if (read is null)
             {
                 return NotFound();
             }
 
-            TRead dto = Mapper.Map<TEntity, TRead>(entity);
-            return await EntityAuthorizeOptions.ReadAuthorize.Invoke(HttpContext, dto) ? Ok(dto) : Forbid();
+            return await EntityAuthorizeOptions.ReadAuthorize.Invoke(HttpContext, read) ? Ok(read) : Forbid();
         }
 
         [HttpGet]
-        public virtual async IAsyncEnumerable<TRead> GetAsync([FromQuery] ValueParseResult<TEntity, bool> filter, [FromQuery] Page page, [EnumeratorCancellation] CancellationToken cancellationToken, [FromQuery] string orderBy = nameof(EntityBase.Id))
+        public virtual async IAsyncEnumerable<TRead> GetAsync([FromQuery(Name = "filter")] ValueParseResult<TRead, bool> readFilter, [FromQuery][Bind(nameof(Page.Number), nameof(page.Count))] Page page, [FromQuery(Name = "orderBy")] OrderByOptions<TRead> orderByKey, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             if (!await EntityAuthorizeOptions.BeforeReadAuthorize.Invoke(HttpContext))
             {
@@ -97,20 +105,27 @@ namespace Maladin.Api.Controllers.Entity
                 yield break;
             }
 
-            PropertyInfo? orderByProperty = typeof(TEntity).GetProperty(orderBy, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-            if (orderByProperty is null)
-            {
-                ModelState.AddModelError(nameof(orderBy), "orderBy value must be property name of entity");
-                BadRequest(ModelState).ExecuteResult(ControllerContext);
-                yield break;
-            }
+            IEnumerable<Expression<Func<IQueryable<TRead>, IIncludableQueryable<TRead, object>>>> readIncludeQuerys = CrudOptions.IncludeExpressions.Select(q => q.Invoke(HttpContext));
+            IEnumerable<Expression<Func<TRead, bool>>> readFilterQuerys = CrudOptions.ReadFilterExpressions.Select(q => q.Invoke(HttpContext)).Append(readFilter.GetExpression());
+            int readCount = Math.Min(MaxReadCount, page.Count);
 
-            IAsyncEnumerable<TRead> asyncDtoQuery;
+            IQueryable<TEntity> serverQuery =
+                DbSet.QueryByDtoExpression(
+                    mapper: Mapper,
+                    orderByKeySelectorExpPairs: orderByKey.OrderByKeySelectorExpPair,
+                    queryFunc: q => q.Skip(readCount * page.Number).Take(readCount),
+                    includes: readIncludeQuerys,
+                    filters: readFilterQuerys);
+            IEnumerable<Expression<Func<TEntity, bool>>> entityFilters = CrudOptions.EntityFilterExpressions.Select(e => e.Invoke(HttpContext));
+            serverQuery = entityFilters.Aggregate(serverQuery, (query, next) => query.Where(next));
+
+            Expression<Func<TEntity, TRead>> entityToReadSelectorExpression = CrudOptions.EntityToReadExpression.Invoke(HttpContext);
+            Expression<Func<TRead, TRead>> readQueryExpression = CrudOptions.ReadServerQueryExpression.Invoke(HttpContext);
+
+            IAsyncEnumerable<TRead> dtoQuery;
             try
             {
-                IQueryable<TEntity> serverQuery = QueryServer(DbSet, filter, page, orderByProperty);
-                IAsyncEnumerable<TRead> dtoQuery = Mapper.ProjectTo<TRead>(serverQuery).AsAsyncEnumerable();
-                asyncDtoQuery = QueryClient(dtoQuery, cancellationToken);
+                dtoQuery = serverQuery.Select(entityToReadSelectorExpression).Select(readQueryExpression).AsAsyncEnumerable();
             }
             catch (Exception e)
             {
@@ -118,12 +133,10 @@ namespace Maladin.Api.Controllers.Entity
                 yield break;
             }
 
-            await foreach (var dto in asyncDtoQuery.WithCancellation(cancellationToken))
+            dtoQuery = CrudOptions.ReadClientQueryFunc.Invoke(HttpContext, dtoQuery);
+            await foreach (var dto in dtoQuery.WithCancellation(cancellationToken))
             {
-                if (await EntityAuthorizeOptions.ReadAuthorize.Invoke(HttpContext, dto))
-                {
-                    yield return dto;
-                }
+                yield return dto;
             }
         }
 
@@ -138,7 +151,8 @@ namespace Maladin.Api.Controllers.Entity
             TEntity entity;
             try
             {
-                entity = await DbSet.Persist(Mapper).InsertOrUpdateAsync(dto, cancellationToken);
+                entity = CrudOptions.CreateFunc.Invoke(HttpContext, dto);
+                DbSet.Add(entity);
                 await DbContext.SaveChangesAsync(cancellationToken);
             }
             catch (Exception e)
@@ -157,10 +171,16 @@ namespace Maladin.Api.Controllers.Entity
                 return User.IsAuthenticated() ? Forbid() : Unauthorized();
             }
 
-            TEntity entity;
+            TEntity? entity;
             try
             {
-                entity = await DbSet.Persist(Mapper).InsertOrUpdateAsync(dto, cancellationToken);
+                entity = await DbSet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+                if (entity is null)
+                {
+                    return NotFound();
+                }
+
+                CrudOptions.UpdateFunc.Invoke(HttpContext, entity, dto);
                 await DbContext.SaveChangesAsync(cancellationToken);
             }
             catch (Exception e)
@@ -201,13 +221,5 @@ namespace Maladin.Api.Controllers.Entity
                 return new DbContextExceptionResult(e);
             }
         }
-
-        protected virtual IQueryable<TEntity> QueryServer(IQueryable<TEntity> query, ValueParseResult<TEntity, bool> filter, Page page, PropertyInfo orderByProperty)
-        {
-            int count = Math.Min(MaxReadCount, page.Count);
-            return query.Where(filter.GetExpression()).OrderBy(orderByProperty).Skip(count * page.Number).Take(count).AsNoTracking();
-        }
-
-        protected virtual IAsyncEnumerable<TRead> QueryClient(IAsyncEnumerable<TRead> query, CancellationToken cancellationToken) => query;
     }
 }

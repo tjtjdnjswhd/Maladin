@@ -1,17 +1,18 @@
-﻿using Maladin.Api.Validation;
+﻿using Maladin.Api.Models.Dtos.Read.Abstractions;
 
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Maladin.Api.Models.Dtos.Read
 {
-    public class AuthorRead
+    public class AuthorRead : ReadBase
     {
-        [EntityId]
-        public required int Id { get; set; }
-
         [Required(AllowEmptyStrings = false)]
         public required string Name { get; set; }
 
-        public string? Introduce { get; set; }
+        public required string? Introduce { get; set; }
+
+        [JsonIgnore]
+        public List<BookDisplayRead>? Books { get; }
     }
 }

@@ -4,15 +4,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Maladin.Api.Models.Dtos.Read.Abstractions
 {
-    public abstract class GoodsRead : IDtoKind
+    public abstract class GoodsRead : ReadBase, IGoodsKind
     {
-        [EntityId]
-        public required int Id { get; set; }
+        public abstract EGoodsKind Kind { get; }
 
         [Required(AllowEmptyStrings = false)]
         public required string Name { get; set; }
 
-        public string? Overview { get; set; }
+        public required string? Overview { get; set; }
 
         [Range(0, int.MaxValue)]
         public required int Price { get; set; }
@@ -20,6 +19,12 @@ namespace Maladin.Api.Models.Dtos.Read.Abstractions
         [EntityId]
         public required int CategoryId { get; set; }
 
-        public required string Kind { get; set; }
+        public GoodsCategoryRead? Category { get; }
+
+        public List<GoodsCartRead>? Carts { get; }
+
+        public List<GoodsOrderRead>? Orders { get; }
+
+        public List<GoodsReviewRead>? Reviews { get; }
     }
 }

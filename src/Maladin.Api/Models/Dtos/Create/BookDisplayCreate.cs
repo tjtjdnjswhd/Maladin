@@ -7,6 +7,10 @@ namespace Maladin.Api.Models.Dtos.Create
 {
     public class BookDisplayCreate : GoodsCreate
     {
+        public override EGoodsKind Kind => EGoodsKind.BookDisplay;
+
+        public required int PageCount { get; set; }
+
         [Required(AllowEmptyStrings = false)]
         public required string PaperSize { get; set; }
 

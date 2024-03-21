@@ -1,18 +1,26 @@
-﻿using Maladin.Api.Validation;
+﻿using Maladin.Api.Models.Dtos.Read.Abstractions;
+using Maladin.Api.Validation;
 
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Maladin.Api.Models.Dtos.Read
 {
-    public class GoodsCategoryRead
+    public class GoodsCategoryRead : ReadBase
     {
-        [EntityId]
-        public required int Id { get; set; }
-
         [Required(AllowEmptyStrings = false)]
         public required string Name { get; set; }
 
         [EntityId]
-        public int? ParentId { get; set; }
+        public required int? ParentId { get; set; }
+
+        [JsonIgnore]
+        public GoodsCategoryRead? Parent { get; }
+
+        [JsonIgnore]
+        public List<GoodsCategoryRead>? ChildCategories { get; }
+
+        [JsonIgnore]
+        public List<GoodsRead>? GoodsList { get; }
     }
 }

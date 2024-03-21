@@ -1,14 +1,13 @@
-﻿using Maladin.Api.Validation;
+﻿using Maladin.Api.Models.Dtos.Read.Abstractions;
+using Maladin.Api.Validation;
 
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Maladin.Api.Models.Dtos.Read
 {
-    public class GoodsOrderRead
+    public class GoodsOrderRead : ReadBase
     {
-        [EntityId]
-        public required int Id { get; set; }
-
         [Range(1, int.MaxValue)]
         public required int OrderQty { get; set; }
 
@@ -20,5 +19,11 @@ namespace Maladin.Api.Models.Dtos.Read
 
         [EntityId]
         public required int GoodsId { get; set; }
+
+        [JsonIgnore]
+        public OrderSetRead? OrderSet { get; }
+
+        [JsonIgnore]
+        public GoodsRead? Goods { get; }
     }
 }

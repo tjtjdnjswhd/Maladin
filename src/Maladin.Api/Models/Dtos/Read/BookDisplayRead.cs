@@ -7,13 +7,15 @@ namespace Maladin.Api.Models.Dtos.Read
 {
     public class BookDisplayRead : GoodsRead
     {
+        public override EGoodsKind Kind => EGoodsKind.BookDisplay;
+
         [Required(AllowEmptyStrings = false)]
         public required string PaperSize { get; set; }
 
         [Range(1, int.MaxValue)]
         public required int PageCount { get; set; }
 
-        public Uri? CoverUrl { get; set; }
+        public required Uri? CoverUrl { get; set; }
 
         public required DateTimeOffset PublishedAt { get; set; }
 

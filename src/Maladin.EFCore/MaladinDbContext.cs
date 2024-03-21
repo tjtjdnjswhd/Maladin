@@ -49,13 +49,13 @@ namespace Maladin.EFCore
 
         public DbSet<Publisher> Publishers { get; set; }
 
-#if DEBUG
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
+#if DEBUG
             optionsBuilder.EnableSensitiveDataLogging();
+#endif
             base.OnConfiguring(optionsBuilder);
         }
-#endif
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -149,6 +149,26 @@ namespace Maladin.EFCore
                     tb.HasCheckConstraint($"CK_{tableName}_{amountColumnName}", $"[{amountColumnName}] > 0");
                 });
             });
+        }
+
+        public async Task<bool> IsUserRelationAsync<T>(int entityId, int userId, CancellationToken cancellationToken = default)
+            where T : EntityBase, IUserRelationEntity
+        {
+            return await IUserRelationEntityQuery<T>.IsUserIdMatch(this, entityId, userId, cancellationToken);
+        }
+
+        private static class IUserRelationEntityQuery<T>
+            where T : EntityBase, IUserRelationEntity
+        {
+            private static readonly Func<MaladinDbContext, int, int, CancellationToken, Task<bool>> _isUserIdMatch
+                = EF.CompileAsyncQuery(
+                    (MaladinDbContext dbContext, int entityId, int userId, CancellationToken cancellationToken) =>
+                    dbContext.Set<T>().Any(e => e.Id == entityId && e.UserId == userId));
+
+            public static Task<bool> IsUserIdMatch(MaladinDbContext dbContext, int entityId, int userId, CancellationToken cancellationToken = default)
+            {
+                return _isUserIdMatch.Invoke(dbContext, entityId, userId, cancellationToken);
+            }
         }
     }
 }

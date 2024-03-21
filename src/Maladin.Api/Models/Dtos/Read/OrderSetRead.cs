@@ -1,15 +1,14 @@
-﻿using Maladin.Api.Validation;
+﻿using Maladin.Api.Models.Dtos.Read.Abstractions;
+using Maladin.Api.Validation;
 using Maladin.EFCore.Models.Enums;
 
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Maladin.Api.Models.Dtos.Read
 {
-    public class OrderSetRead
+    public class OrderSetRead : ReadBase
     {
-        [EntityId]
-        public required int Id { get; set; }
-
         public required Guid Uid { get; set; }
 
         [Range(0, int.MaxValue)]
@@ -26,7 +25,7 @@ namespace Maladin.Api.Models.Dtos.Read
         [Required(AllowEmptyStrings = false)]
         public required string ReceiverName { get; set; }
 
-        public string? Message { get; set; }
+        public required string? Message { get; set; }
 
         [Phone]
         public required string PhoneNumber { get; set; }
@@ -44,5 +43,17 @@ namespace Maladin.Api.Models.Dtos.Read
 
         [EntityId]
         public required int PaymentId { get; set; }
+
+        [JsonIgnore]
+        public UserRead? User { get; }
+
+        [JsonIgnore]
+        public DeliveryRead? Delivery { get; }
+
+        [JsonIgnore]
+        public PaymentRead? Payment { get; }
+
+        [JsonIgnore]
+        public List<GoodsOrderRead>? GoodsOrders { get; }
     }
 }

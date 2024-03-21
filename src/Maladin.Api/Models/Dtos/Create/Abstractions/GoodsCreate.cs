@@ -4,8 +4,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Maladin.Api.Models.Dtos.Create.Abstractions
 {
-    public abstract class GoodsCreate : IDtoKind
+    public abstract class GoodsCreate : IGoodsKind
     {
+        public abstract EGoodsKind Kind { get; }
+
         [Required(AllowEmptyStrings = false)]
         public required string Name { get; set; }
 
@@ -16,7 +18,5 @@ namespace Maladin.Api.Models.Dtos.Create.Abstractions
 
         [EntityId]
         public required int CategoryId { get; set; }
-
-        public required string Kind { get; set; }
     }
 }

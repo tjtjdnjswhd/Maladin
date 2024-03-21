@@ -1,77 +1,73 @@
-﻿using Maladin.Api.Helpers;
-using Maladin.Api.Models.Dtos;
-using Maladin.Api.Models.Dtos.Create;
+﻿using Maladin.Api.Models.Dtos;
 using Maladin.Api.Models.Dtos.Create.Abstractions;
-using Maladin.Api.Models.Dtos.Read;
 using Maladin.Api.Models.Dtos.Read.Abstractions;
-using Maladin.Api.Models.Dtos.Update;
 using Maladin.Api.Models.Dtos.Update.Abstractions;
 
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
+using System.Diagnostics;
+
 namespace Maladin.Api.ModelBinders
 {
-    public class GoodsModelBinderProvider : IModelBinderProvider
+    public class GoodsModelBinderProvider(Dictionary<string, DtoTypes> dtoTypesByKind) : IModelBinderProvider
     {
-        private static readonly Type[] ReadDtoTypes = [typeof(BookDisplayRead)];
-
-        private static readonly Type[] CreateDtoTypes = [typeof(BookDisplayCreate)];
-
-        private static readonly Type[] UpdateDtoTypes = [typeof(BookDisplayUpdate)];
+        private readonly Dictionary<string, DtoTypes> _dtoTypesByKind = dtoTypesByKind;
 
         public IModelBinder? GetBinder(ModelBinderProviderContext context)
         {
+            Func<KeyValuePair<string, DtoTypes>, Type> elementSelector;
             if (context.Metadata.ModelType == typeof(GoodsRead))
             {
-                return new GoodsModelBinder(EDtoAction.Read, GetBinders(context, ReadDtoTypes));
+                elementSelector = pair => pair.Value.Read;
+            }
+            else if (context.Metadata.ModelType == typeof(GoodsCreate))
+            {
+                elementSelector = pair => pair.Value.Create;
+            }
+            else if (context.Metadata.ModelType == typeof(GoodsUpdate))
+            {
+                elementSelector = pair => pair.Value.Update;
+            }
+            else
+            {
+                return null;
             }
 
-            if (context.Metadata.ModelType == typeof(GoodsCreate))
+            Dictionary<string, (ModelMetadata modelMetadata, IModelBinder)> binders = _dtoTypesByKind.ToDictionary(t => t.Key, k =>
             {
-                return new GoodsModelBinder(EDtoAction.Create, GetBinders(context, CreateDtoTypes));
-            }
-
-            if (context.Metadata.ModelType == typeof(GoodsUpdate))
-            {
-                return new GoodsModelBinder(EDtoAction.Update, GetBinders(context, UpdateDtoTypes));
-            }
-
-            return null;
-        }
-
-        private static Dictionary<Type, (ModelMetadata, IModelBinder)> GetBinders(ModelBinderProviderContext context, Type[] modelTypes)
-        {
-            Dictionary<Type, (ModelMetadata, IModelBinder)> binders = modelTypes.ToDictionary(t => t, t =>
-            {
-                var modelMetaData = context.MetadataProvider.GetMetadataForType(t);
-                return (modelMetaData, context.CreateBinder(modelMetaData));
+                var modelMetadata = context.MetadataProvider.GetMetadataForType(elementSelector.Invoke(k));
+                return (modelMetadata, context.CreateBinder(modelMetadata));
             });
-            return binders;
+
+            return new GoodsModelBinder(binders);
         }
     }
 
-    public class GoodsModelBinder(EDtoAction dtoType, Dictionary<Type, (ModelMetadata, IModelBinder)> binders) : IModelBinder
+    public class GoodsModelBinder(Dictionary<string, (ModelMetadata, IModelBinder)> binders) : IModelBinder
     {
-        private readonly EDtoAction _dtoType = dtoType;
-        private readonly Dictionary<Type, (ModelMetadata, IModelBinder)> _binders = binders;
+        private readonly Dictionary<string, (ModelMetadata, IModelBinder)> _binders = binders;
 
         public async Task BindModelAsync(ModelBindingContext bindingContext)
         {
-            string kindName = ModelNames.CreatePropertyModelName(bindingContext.ModelName, nameof(IDtoKind.Kind));
+            string kindName = ModelNames.CreatePropertyModelName(bindingContext.ModelName, nameof(IGoodsKind.Kind));
             string? kind = bindingContext.ValueProvider.GetValue(kindName).FirstValue;
 
-            if (kind is null || DtoHelper.GetDtoTypeOrNull(_dtoType, kind) is not Type dtoType)
+            if (kind is null)
             {
                 bindingContext.Result = ModelBindingResult.Failed();
                 return;
             }
 
-            (ModelMetadata modelMetadata, IModelBinder modelBinder) = _binders[dtoType];
+            if (!_binders.TryGetValue(kind, out (ModelMetadata modelMetadata, IModelBinder modelBinder) binder))
+            {
+                Debug.Assert(false);
+                throw new ArgumentException($"kind '{kind}' not registed");
+            }
 
-            var newBindingContext = DefaultModelBindingContext.CreateBindingContext(bindingContext.ActionContext, bindingContext.ValueProvider, modelMetadata, null, bindingContext.ModelName);
+            var newBindingContext = DefaultModelBindingContext.CreateBindingContext(bindingContext.ActionContext, bindingContext.ValueProvider, binder.modelMetadata, null, bindingContext.ModelName);
 
-            await modelBinder.BindModelAsync(newBindingContext);
+            await binder.modelBinder.BindModelAsync(newBindingContext);
             bindingContext.Result = newBindingContext.Result;
 
             if (newBindingContext.Result.IsModelSet)
@@ -81,10 +77,24 @@ namespace Maladin.Api.ModelBinders
                 {
                     bindingContext.ValidationState[model] = new ValidationStateEntry()
                     {
-                        Metadata = modelMetadata
+                        Metadata = binder.modelMetadata
                     };
                 }
             }
+        }
+
+    }
+
+    public record struct DtoTypes(Type Read, Type Create, Type Update)
+    {
+        public static implicit operator (Type read, Type create, Type update)(DtoTypes value)
+        {
+            return (value.Read, value.Create, value.Update);
+        }
+
+        public static implicit operator DtoTypes((Type read, Type create, Type update) value)
+        {
+            return new DtoTypes(value.read, value.create, value.update);
         }
     }
 }
