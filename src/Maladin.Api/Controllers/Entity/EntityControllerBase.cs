@@ -16,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Options;
 
+using System.ComponentModel;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
@@ -42,6 +43,8 @@ namespace Maladin.Api.Controllers.Entity
         protected CrudOptions<TEntity, TRead, TCreate, TUpdate> CrudOptions { get; }
 
         protected EntityAuthorizeOptions<TEntity, TRead, TCreate, TUpdate> EntityAuthorizeOptions { get; }
+
+        protected IEnumerable<OrderByPair<TRead>> DefaultOrderBy { get; } = [new(e => e.Id, ListSortDirection.Ascending)];
 
         protected EntityControllerBase(
             MaladinDbContext dbContext,
@@ -74,13 +77,16 @@ namespace Maladin.Api.Controllers.Entity
                 return User.IsAuthenticated() ? Forbid() : Unauthorized();
             }
 
+            IEnumerable<ExpressionGetDelegate<TEntity, bool>> EntityFilterExpressions = CrudOptions.EntityFilterExpressions;
+            IEnumerable<ExpressionGetDelegate<TRead, bool>> ReadFilterExpressions = CrudOptions.ReadFilterExpressions;
+
             Expression<Func<TEntity, TRead>> readSelectorExp = CrudOptions.EntityToReadExpression.Invoke(HttpContext);
-            Expression<Func<TRead, TRead>> readQueryExp = CrudOptions.ReadServerQueryExpression.Invoke(HttpContext);
             TRead? read;
             try
             {
-                IQueryable<TEntity> query = DbSet.QueryByDtoExpression(Mapper, includes: CrudOptions.IncludeExpressions.Select(e => e.Invoke(HttpContext)));
-                read = await query.Select(readSelectorExp).Select(readQueryExp).FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+                IQueryable<TEntity> query = DbSet.QueryByDtoExpression(Mapper, includes: CrudOptions.IncludeExpressions.Select(e => e.Invoke(HttpContext)), filters: ReadFilterExpressions.Select(e => e.Invoke(HttpContext)));
+                query = EntityFilterExpressions.Aggregate(query, (q, next) => q.Where(next.Invoke(HttpContext)));
+                read = await query.Select(readSelectorExp).FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
             }
             catch (Exception e)
             {
@@ -96,7 +102,7 @@ namespace Maladin.Api.Controllers.Entity
         }
 
         [HttpGet]
-        public virtual async IAsyncEnumerable<TRead> GetAsync([FromQuery(Name = "filter")] ValueParseResult<TRead, bool> readFilter, [FromQuery][Bind(nameof(Page.Number), nameof(page.Count))] Page page, [FromQuery(Name = "orderBy")] OrderByOptions<TRead> orderByKey, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public virtual async IAsyncEnumerable<TRead> GetAsync([FromQuery(Name = "filter")] ValueParseResult<TRead, bool>? readFilter, [FromQuery][Bind(nameof(Page.Number), nameof(page.Count))] Page? page, [FromQuery(Name = "orderBy")] OrderByOptions<TRead>? orderByKey, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             if (!await EntityAuthorizeOptions.BeforeReadAuthorize.Invoke(HttpContext))
             {
@@ -106,26 +112,31 @@ namespace Maladin.Api.Controllers.Entity
             }
 
             IEnumerable<Expression<Func<IQueryable<TRead>, IIncludableQueryable<TRead, object>>>> readIncludeQuerys = CrudOptions.IncludeExpressions.Select(q => q.Invoke(HttpContext));
-            IEnumerable<Expression<Func<TRead, bool>>> readFilterQuerys = CrudOptions.ReadFilterExpressions.Select(q => q.Invoke(HttpContext)).Append(readFilter.GetExpression());
-            int readCount = Math.Min(MaxReadCount, page.Count);
+            IEnumerable<Expression<Func<TRead, bool>>> readFilterQuerys = CrudOptions.ReadFilterExpressions.Select(q => q.Invoke(HttpContext));
+            if (readFilter is not null)
+            {
+                readFilterQuerys = readFilterQuerys.Append(readFilter.GetExpression());
+            }
+
+            int readCount = page is null ? MaxReadCount : Math.Min(MaxReadCount, page.Count);
+            int pageNumber = page is null ? 0 : page.Number;
 
             IQueryable<TEntity> serverQuery =
                 DbSet.QueryByDtoExpression(
                     mapper: Mapper,
-                    orderByKeySelectorExpPairs: orderByKey.OrderByKeySelectorExpPair,
-                    queryFunc: q => q.Skip(readCount * page.Number).Take(readCount),
+                    orderByKeySelectorExpPairs: orderByKey?.OrderByKeySelectorExpPair ?? DefaultOrderBy,
+                    queryFunc: q => q.Skip(readCount * pageNumber).Take(readCount),
                     includes: readIncludeQuerys,
                     filters: readFilterQuerys);
             IEnumerable<Expression<Func<TEntity, bool>>> entityFilters = CrudOptions.EntityFilterExpressions.Select(e => e.Invoke(HttpContext));
             serverQuery = entityFilters.Aggregate(serverQuery, (query, next) => query.Where(next));
 
             Expression<Func<TEntity, TRead>> entityToReadSelectorExpression = CrudOptions.EntityToReadExpression.Invoke(HttpContext);
-            Expression<Func<TRead, TRead>> readQueryExpression = CrudOptions.ReadServerQueryExpression.Invoke(HttpContext);
 
             IAsyncEnumerable<TRead> dtoQuery;
             try
             {
-                dtoQuery = serverQuery.Select(entityToReadSelectorExpression).Select(readQueryExpression).AsAsyncEnumerable();
+                dtoQuery = serverQuery.Select(entityToReadSelectorExpression).AsAsyncEnumerable();
             }
             catch (Exception e)
             {
@@ -151,7 +162,7 @@ namespace Maladin.Api.Controllers.Entity
             TEntity entity;
             try
             {
-                entity = CrudOptions.CreateFunc.Invoke(HttpContext, dto);
+                entity = CrudOptions.CreateFunc.Invoke(dto);
                 DbSet.Add(entity);
                 await DbContext.SaveChangesAsync(cancellationToken);
             }
@@ -180,7 +191,7 @@ namespace Maladin.Api.Controllers.Entity
                     return NotFound();
                 }
 
-                CrudOptions.UpdateFunc.Invoke(HttpContext, entity, dto);
+                CrudOptions.UpdateFunc.Invoke(entity, dto);
                 await DbContext.SaveChangesAsync(cancellationToken);
             }
             catch (Exception e)

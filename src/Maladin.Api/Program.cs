@@ -1,4 +1,7 @@
+using LinqExpressionParser.AspNetCore.Results;
+
 using Maladin.Api;
+using Maladin.Api.Models;
 using Maladin.EFCore;
 
 using Microsoft.EntityFrameworkCore;
@@ -6,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 
 using Portone.Extensions;
 
+using System.Net;
 using System.Text;
 
 const string JWT_SECTION = "Jwt";
@@ -14,7 +18,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(o =>
+{
+    o.MapType(typeof(OrderByOptions<>), () => new());
+    o.MapType(typeof(ValueParseResult<,>), () => new());
+    o.MapType<IPAddress>(() => new() { Title = "string" });
+});
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -31,7 +40,7 @@ else
 }
 
 string connectionString = builder.Configuration.GetConnectionString("Default") ?? throw new NullReferenceException();
-builder.Services.AddDbContextPool<MaladinDbContext>(options =>
+builder.Services.AddDbContext<MaladinDbContext>(options =>
 {
     options.UseSqlServer(connectionString);
 });

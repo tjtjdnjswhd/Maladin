@@ -252,7 +252,6 @@ namespace Maladin.SqlServerMigration.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Content")
-                        .IsRequired()
                         .IsUnicode(true)
                         .HasColumnType("nvarchar(max)");
 

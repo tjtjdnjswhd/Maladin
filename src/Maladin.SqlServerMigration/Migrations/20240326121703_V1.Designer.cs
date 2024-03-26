@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maladin.SqlServerMigration.Migrations
 {
     [DbContext(typeof(MaladinDbContext))]
-    [Migration("20240221132849_V1")]
+    [Migration("20240326121703_V1")]
     partial class V1
     {
         /// <inheritdoc />
@@ -255,7 +255,6 @@ namespace Maladin.SqlServerMigration.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Content")
-                        .IsRequired()
                         .IsUnicode(true)
                         .HasColumnType("nvarchar(max)");
 

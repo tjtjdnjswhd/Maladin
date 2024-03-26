@@ -1,13 +1,13 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
 
 namespace Maladin.Api.Models
 {
     public record ChallengeInfo : IValidatableObject
     {
+        [Required]
         public required string OAuthProviderName { get; init; }
 
-        [JsonConverter(typeof(JsonStringEnumConverter<EChallengeKind>))]
+        [Required]
         public required EChallengeKind ChallengeKind { get; init; }
 
         public string? UserName { get; init; }
