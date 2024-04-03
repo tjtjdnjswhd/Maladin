@@ -24,7 +24,7 @@ namespace ReferenceExpression
             }
         }
 
-        public bool TryBetMapExpression(Type source, Type dest, bool withReference, [NotNullWhen(true)] out LambdaExpression? result)
+        public bool TryGetMapExpression(Type source, Type dest, bool withReference, [NotNullWhen(true)] out LambdaExpression? result)
         {
             ReadOnlyDictionary<TypePair, LambdaExpression> expressions = withReference ? _referenceMapExpressions : _defaultExpressions;
             return expressions.TryGetValue(new TypePair(source, dest), out result);
