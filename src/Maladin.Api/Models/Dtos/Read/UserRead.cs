@@ -31,27 +31,27 @@ namespace Maladin.Api.Models.Dtos.Read
         public required int MembershipId { get; set; }
 
         [JsonIgnore]
-        public MembershipRead? Membership { get; }
+        public MembershipRead? Membership { get; private set; }
 
         [JsonIgnore]
-        public List<RoleRead>? Roles { get; }
+        public List<RoleRead>? Roles { get; private set; }
 
         [JsonIgnore]
-        public List<OAuthIdRead>? OAuthIds { get; }
+        public List<OAuthIdRead>? OAuthIds { get; private set; }
 
         [JsonIgnore]
-        public List<PointRead>? Points { get; }
+        public List<PointRead>? Points { get; private set; }
 
         [JsonIgnore]
-        public List<UserAddressRead>? Addresses { get; }
+        public List<UserAddressRead>? Addresses { get; private set; }
 
         [JsonIgnore]
-        public List<OrderSetRead>? Orders { get; }
+        public List<OrderSetRead>? Orders { get; private set; }
 
         [JsonIgnore]
-        public List<GoodsCartRead>? Cart { get; }
+        public List<GoodsCartRead>? Cart { get; private set; }
 
         [JsonIgnore]
-        public List<GoodsReviewRead>? Reviews { get; }
+        public List<GoodsReviewRead>? Reviews { get; private set; }
     }
 }

@@ -1,6 +1,4 @@
-﻿using AutoMapper;
-
-using Maladin.Api.Models.Dtos.Create;
+﻿using Maladin.Api.Models.Dtos.Create;
 using Maladin.Api.Models.Dtos.Read;
 using Maladin.Api.Models.Dtos.Update;
 using Maladin.Api.Options;
@@ -12,8 +10,8 @@ using Microsoft.Extensions.Options;
 
 namespace Maladin.Api.Controllers.Entity
 {
-    public class DeliveryController(MaladinDbContext dbContext, IMapper mapper, ILogger<DeliveryController> logger, IEntityConfigurationService configuration, IOptions<CrudOptions<Delivery, DeliveryRead, DeliveryCreate, DeliveryUpdate>> crudOptions, IOptions<EntityAuthorizeOptions<Delivery, DeliveryRead, DeliveryCreate, DeliveryUpdate>> entityAuthorizeOptions)
-        : EntityControllerBase<Delivery, DeliveryRead, DeliveryCreate, DeliveryUpdate>(dbContext, mapper, logger, configuration, crudOptions, entityAuthorizeOptions)
+    public class DeliveryController(MaladinDbContext dbContext, ILogger<DeliveryController> logger, IEntityConfigurationService configuration, IOptions<CrudOptions<Delivery, DeliveryRead, DeliveryCreate, DeliveryUpdate>> crudOptions, IOptions<EntityActionFilterOptions<Delivery, DeliveryRead, DeliveryCreate, DeliveryUpdate>> actionFilterOptions)
+        : EntityControllerBase<Delivery, DeliveryRead, DeliveryCreate, DeliveryUpdate>(dbContext, logger, configuration, crudOptions, actionFilterOptions)
     {
     }
 }

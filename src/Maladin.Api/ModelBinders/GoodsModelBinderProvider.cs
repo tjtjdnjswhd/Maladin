@@ -10,13 +10,13 @@ using System.Diagnostics;
 
 namespace Maladin.Api.ModelBinders
 {
-    public class GoodsModelBinderProvider(Dictionary<string, DtoTypes> dtoTypesByKind) : IModelBinderProvider
+    public class GoodsModelBinderProvider(Dictionary<EGoodsKind, DtoTypes> dtoTypesByKind) : IModelBinderProvider
     {
-        private readonly Dictionary<string, DtoTypes> _dtoTypesByKind = dtoTypesByKind;
+        private readonly Dictionary<EGoodsKind, DtoTypes> _goodsTypesByKind = dtoTypesByKind;
 
         public IModelBinder? GetBinder(ModelBinderProviderContext context)
         {
-            Func<KeyValuePair<string, DtoTypes>, Type> elementSelector;
+            Func<KeyValuePair<EGoodsKind, DtoTypes>, Type> elementSelector;
             if (context.Metadata.ModelType == typeof(GoodsRead))
             {
                 elementSelector = pair => pair.Value.Read;
@@ -34,7 +34,7 @@ namespace Maladin.Api.ModelBinders
                 return null;
             }
 
-            Dictionary<string, (ModelMetadata modelMetadata, IModelBinder)> binders = _dtoTypesByKind.ToDictionary(t => t.Key, k =>
+            Dictionary<EGoodsKind, (ModelMetadata modelMetadata, IModelBinder)> binders = _goodsTypesByKind.ToDictionary(t => t.Key, k =>
             {
                 var modelMetadata = context.MetadataProvider.GetMetadataForType(elementSelector.Invoke(k));
                 return (modelMetadata, context.CreateBinder(modelMetadata));
@@ -44,25 +44,25 @@ namespace Maladin.Api.ModelBinders
         }
     }
 
-    public class GoodsModelBinder(Dictionary<string, (ModelMetadata, IModelBinder)> binders) : IModelBinder
+    public class GoodsModelBinder(Dictionary<EGoodsKind, (ModelMetadata, IModelBinder)> binders) : IModelBinder
     {
-        private readonly Dictionary<string, (ModelMetadata, IModelBinder)> _binders = binders;
+        private readonly Dictionary<EGoodsKind, (ModelMetadata, IModelBinder)> _binders = binders;
 
         public async Task BindModelAsync(ModelBindingContext bindingContext)
         {
             string kindName = ModelNames.CreatePropertyModelName(bindingContext.ModelName, nameof(IGoodsKind.Kind));
             string? kind = bindingContext.ValueProvider.GetValue(kindName).FirstValue;
 
-            if (kind is null)
+            if (kind is null || !Enum.TryParse(kind, true, out EGoodsKind goodsKind))
             {
                 bindingContext.Result = ModelBindingResult.Failed();
                 return;
             }
 
-            if (!_binders.TryGetValue(kind, out (ModelMetadata modelMetadata, IModelBinder modelBinder) binder))
+            if (!_binders.TryGetValue(goodsKind, out (ModelMetadata modelMetadata, IModelBinder modelBinder) binder))
             {
                 Debug.Assert(false);
-                throw new ArgumentException($"kind '{kind}' not registed");
+                throw new ArgumentException($"kind '{goodsKind}' not registed");
             }
 
             var newBindingContext = DefaultModelBindingContext.CreateBindingContext(bindingContext.ActionContext, bindingContext.ValueProvider, binder.modelMetadata, null, bindingContext.ModelName);

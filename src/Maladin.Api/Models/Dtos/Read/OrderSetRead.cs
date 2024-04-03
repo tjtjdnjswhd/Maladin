@@ -45,15 +45,15 @@ namespace Maladin.Api.Models.Dtos.Read
         public required int PaymentId { get; set; }
 
         [JsonIgnore]
-        public UserRead? User { get; }
+        public UserRead? User { get; private set; }
 
         [JsonIgnore]
-        public DeliveryRead? Delivery { get; }
+        public DeliveryRead? Delivery { get; private set; }
 
         [JsonIgnore]
-        public PaymentRead? Payment { get; }
+        public PaymentRead? Payment { get; private set; }
 
         [JsonIgnore]
-        public List<GoodsOrderRead>? GoodsOrders { get; }
+        public List<GoodsOrderRead>? GoodsOrders { get; private set; }
     }
 }

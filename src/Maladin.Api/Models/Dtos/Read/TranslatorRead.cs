@@ -13,6 +13,6 @@ namespace Maladin.Api.Models.Dtos.Read
         public required string? Introduce { get; set; }
 
         [JsonIgnore]
-        public List<BookDisplayRead>? Books { get; }
+        public List<BookDisplayRead>? Books { get; private set; }
     }
 }

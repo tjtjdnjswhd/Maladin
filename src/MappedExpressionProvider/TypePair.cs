@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace ReferenceExpression
+namespace MappedExpressionProvider
 {
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public record struct TypePair(Type Source, Type Dest)

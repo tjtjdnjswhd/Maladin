@@ -1,7 +1,7 @@
-﻿namespace ReferenceExpression.Attributes
+﻿namespace MappedExpressionProvider.Attributes
 {
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
-    public class ExcludeReferenceAttribute : Attribute
+    public class EnforceReferenceMapAttribute : Attribute
     {
     }
 }

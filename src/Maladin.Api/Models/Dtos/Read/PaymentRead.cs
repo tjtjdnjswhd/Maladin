@@ -18,6 +18,6 @@ namespace Maladin.Api.Models.Dtos.Read
         public required string Status { get; set; }
 
         [JsonIgnore]
-        public OrderSetRead? Order { get; }
+        public OrderSetRead? Order { get; private set; }
     }
 }

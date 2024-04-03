@@ -47,7 +47,8 @@ builder.Services.AddDbContext<MaladinDbContext>(options =>
 
 builder.ConfigureAuthentication(JWT_SECTION, CreateKey);
 builder.ConfigureAuthorization();
-builder.ConfigureEntityOptions();
+builder.ConfigureEntityActionFilter();
+builder.ConfigureCrudOptions();
 
 builder.Services.AddDistributedMemoryCache();
 

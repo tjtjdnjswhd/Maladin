@@ -1,6 +1,4 @@
-﻿using AutoMapper;
-
-using Maladin.Api.Models.Dtos.Create;
+﻿using Maladin.Api.Models.Dtos.Create;
 using Maladin.Api.Models.Dtos.Read;
 using Maladin.Api.Models.Dtos.Update;
 using Maladin.Api.Options;
@@ -12,8 +10,8 @@ using Microsoft.Extensions.Options;
 
 namespace Maladin.Api.Controllers.Entity
 {
-    public class TranslatorController(MaladinDbContext dbContext, IMapper mapper, ILogger<TranslatorController> logger, IEntityConfigurationService configuration, IOptions<CrudOptions<Translator, TranslatorRead, TranslatorCreate, TranslatorUpdate>> crudOptions, IOptions<EntityAuthorizeOptions<Translator, TranslatorRead, TranslatorCreate, TranslatorUpdate>> entityAuthorizeOptions)
-        : EntityControllerBase<Translator, TranslatorRead, TranslatorCreate, TranslatorUpdate>(dbContext, mapper, logger, configuration, crudOptions, entityAuthorizeOptions)
+    public class TranslatorController(MaladinDbContext dbContext, ILogger<TranslatorController> logger, IEntityConfigurationService configuration, IOptions<CrudOptions<Translator, TranslatorRead, TranslatorCreate, TranslatorUpdate>> crudOptions, IOptions<EntityActionFilterOptions<Translator, TranslatorRead, TranslatorCreate, TranslatorUpdate>> actionFilterOptions)
+        : EntityControllerBase<Translator, TranslatorRead, TranslatorCreate, TranslatorUpdate>(dbContext, logger, configuration, crudOptions, actionFilterOptions)
     {
     }
 }

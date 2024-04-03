@@ -14,6 +14,6 @@ namespace Maladin.Api.Models.Dtos.Read
         public required int PointPercentage { get; set; }
 
         [JsonIgnore]
-        public List<UserRead>? Users { get; }
+        public List<UserRead>? Users { get; private set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace ReferenceExpression.Exceptions
+﻿namespace MappedExpressionProvider.Exceptions
 {
     public class EnforceReferenceException(string message) : Exception(message)
     {

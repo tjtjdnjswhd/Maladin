@@ -18,9 +18,9 @@ namespace Maladin.Api.Models.Dtos.Read
         public required int UserId { get; set; }
 
         [JsonIgnore]
-        public OAuthProviderRead? Provider { get; }
+        public OAuthProviderRead? Provider { get; private set; }
 
         [JsonIgnore]
-        public UserRead? User { get; }
+        public UserRead? User { get; private set; }
     }
 }

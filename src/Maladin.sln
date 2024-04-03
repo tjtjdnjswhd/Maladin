@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Maladin.Api", "Maladin.Api\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Maladin.Services", "Maladin.Services\Maladin.Services.csproj", "{C83BF812-A9C0-444E-AFC4-258995972EEC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReferenceExpression", "ReferenceExpression\ReferenceExpression.csproj", "{917F523A-F2C6-44DC-9F1A-44A0A9E39733}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MappedExpressionProvider", "MappedExpressionProvider\MappedExpressionProvider.csproj", "{917F523A-F2C6-44DC-9F1A-44A0A9E39733}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

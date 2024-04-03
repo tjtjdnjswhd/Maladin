@@ -19,12 +19,12 @@ namespace Maladin.Api.Models.Dtos.Read.Abstractions
         [EntityId]
         public required int CategoryId { get; set; }
 
-        public GoodsCategoryRead? Category { get; }
+        public GoodsCategoryRead? Category { get; protected set; }
 
-        public List<GoodsCartRead>? Carts { get; }
+        public List<GoodsCartRead>? Carts { get; protected set; }
 
-        public List<GoodsOrderRead>? Orders { get; }
+        public List<GoodsOrderRead>? Orders { get; protected set; }
 
-        public List<GoodsReviewRead>? Reviews { get; }
+        public List<GoodsReviewRead>? Reviews { get; protected set; }
     }
 }

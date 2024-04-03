@@ -17,6 +17,6 @@ namespace Maladin.Api.Models.Dtos.Read
         public required int Sales { get; set; }
 
         [JsonIgnore]
-        public List<BookDisplayRead>? BookDisplays { get; }
+        public List<BookDisplayRead>? BookDisplays { get; private set; }
     }
 }

@@ -15,12 +15,12 @@ namespace Maladin.Api.Models.Dtos.Read
         public required int? ParentId { get; set; }
 
         [JsonIgnore]
-        public GoodsCategoryRead? Parent { get; }
+        public GoodsCategoryRead? Parent { get; private set; }
 
         [JsonIgnore]
-        public List<GoodsCategoryRead>? ChildCategories { get; }
+        public List<GoodsCategoryRead>? ChildCategories { get; private set; }
 
         [JsonIgnore]
-        public List<GoodsRead>? GoodsList { get; }
+        public List<GoodsRead>? GoodsList { get; private set; }
     }
 }

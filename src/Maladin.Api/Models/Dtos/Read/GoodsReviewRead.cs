@@ -21,9 +21,9 @@ namespace Maladin.Api.Models.Dtos.Read
         public required int GoodsId { get; set; }
 
         [JsonIgnore]
-        public UserRead? User { get; }
+        public UserRead? User { get; private set; }
 
         [JsonIgnore]
-        public GoodsRead? Goods { get; }
+        public GoodsRead? Goods { get; private set; }
     }
 }
