@@ -86,7 +86,6 @@ namespace Maladin.Api
             {
                 options.ClientId = builder.Configuration.GetValue<string>("OAuthProvider:Google:ClientId") ?? throw new NullReferenceException();
                 options.ClientSecret = builder.Configuration.GetValue<string>("OAuthProvider:Google:ClientSecret") ?? throw new NullReferenceException();
-                options.AuthorizationEndpoint += "?prompt=consent";
             })
             .AddKakaoTalk(options =>
             {
@@ -146,6 +145,8 @@ namespace Maladin.Api
         {
             builder.Services.AddEntityActionFilterOptions<Author, AuthorRead, AuthorCreate, AuthorUpdate>(options =>
             {
+                options.BeforeRead = context => Task.FromResult<IActionResult?>(null);
+                options.AfterRead = (context, _) => Task.FromResult<IActionResult?>(null);
                 options.BeforeCreate = (context, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeUpdate = (context, _, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeDelete = (context, _) => Task.FromResult(AuthorizeAdmin(context));
@@ -154,6 +155,7 @@ namespace Maladin.Api
             builder.Services.AddEntityActionFilterOptions<Book, BookRead, BookCreate, BookUpdate>(options =>
             {
                 options.BeforeRead = context => Task.FromResult(AuthorizeAdmin(context));
+                options.AfterRead = (context, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeCreate = (context, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeUpdate = (context, _, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeDelete = (context, _) => Task.FromResult(AuthorizeAdmin(context));
@@ -161,6 +163,8 @@ namespace Maladin.Api
 
             builder.Services.AddEntityActionFilterOptions<BookDisplay, BookDisplayRead, BookDisplayCreate, BookDisplayUpdate>(options =>
             {
+                options.BeforeRead = context => Task.FromResult<IActionResult?>(null);
+                options.AfterRead = (context, _) => Task.FromResult<IActionResult?>(null);
                 options.BeforeCreate = (context, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeUpdate = (context, _, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeDelete = (context, _) => Task.FromResult(AuthorizeAdmin(context));
@@ -168,6 +172,8 @@ namespace Maladin.Api
 
             builder.Services.AddEntityActionFilterOptions<Delivery, DeliveryRead, DeliveryCreate, DeliveryUpdate>(options =>
             {
+                options.BeforeRead = context => Task.FromResult<IActionResult?>(null);
+                options.AfterRead = (context, _) => Task.FromResult<IActionResult?>(null);
                 options.BeforeCreate = (context, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeUpdate = (context, _, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeDelete = (context, _) => Task.FromResult(AuthorizeAdmin(context));
@@ -184,6 +190,8 @@ namespace Maladin.Api
 
             builder.Services.AddEntityActionFilterOptions<GoodsCategory, GoodsCategoryRead, GoodsCategoryCreate, GoodsCategoryUpdate>(options =>
             {
+                options.BeforeRead = context => Task.FromResult<IActionResult?>(null);
+                options.AfterRead = (context, _) => Task.FromResult<IActionResult?>(null);
                 options.BeforeCreate = (context, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeUpdate = (context, _, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeDelete = (context, _) => Task.FromResult(AuthorizeAdmin(context));
@@ -191,6 +199,8 @@ namespace Maladin.Api
 
             builder.Services.AddEntityActionFilterOptions<Goods, GoodsRead, GoodsCreate, GoodsUpdate>(options =>
             {
+                options.BeforeRead = context => Task.FromResult<IActionResult?>(null);
+                options.AfterRead = (context, _) => Task.FromResult<IActionResult?>(null);
                 options.BeforeCreate = (context, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeUpdate = (context, _, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeDelete = (context, _) => Task.FromResult(AuthorizeAdmin(context));
@@ -219,15 +229,17 @@ namespace Maladin.Api
 
             builder.Services.AddEntityActionFilterOptions<GoodsReview, GoodsReviewRead, GoodsReviewCreate, GoodsReviewUpdate>(options =>
             {
-                options.AfterRead = async (context, read) => await AuthorizeAdminOrUserIdAsync<GoodsCart>(context, read.Id);
+                options.BeforeRead = context => Task.FromResult<IActionResult?>(null);
+                options.AfterRead = (context, _) => Task.FromResult<IActionResult?>(null);
                 options.BeforeCreate = (context, _) => Task.FromResult(AuthorizeAuthenticated(context));
                 options.BeforeUpdate = async (context, entityId, _) => await AuthorizeAdminOrUserIdAsync<GoodsCart>(context, entityId);
                 options.BeforeDelete = async (context, entityId) => await AuthorizeAdminOrUserIdAsync<GoodsCart>(context, entityId);
             });
 
-
             builder.Services.AddEntityActionFilterOptions<Membership, MembershipRead, MembershipCreate, MembershipUpdate>(options =>
             {
+                options.BeforeRead = context => Task.FromResult<IActionResult?>(null);
+                options.AfterRead = (context, _) => Task.FromResult<IActionResult?>(null);
                 options.BeforeCreate = (context, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeUpdate = (context, _, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeDelete = (context, _) => Task.FromResult(AuthorizeAdmin(context));
@@ -244,6 +256,8 @@ namespace Maladin.Api
 
             builder.Services.AddEntityActionFilterOptions<OAuthProvider, OAuthProviderRead, OAuthProviderCreate, OAuthProviderUpdate>(options =>
             {
+                options.BeforeRead = context => Task.FromResult<IActionResult?>(null);
+                options.AfterRead = (context, _) => Task.FromResult<IActionResult?>(null);
                 options.BeforeCreate = (context, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeUpdate = (context, _, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeDelete = (context, _) => Task.FromResult(AuthorizeAdmin(context));
@@ -290,6 +304,8 @@ namespace Maladin.Api
 
             builder.Services.AddEntityActionFilterOptions<Publisher, PublisherRead, PublisherCreate, PublisherUpdate>(options =>
             {
+                options.BeforeRead = context => Task.FromResult<IActionResult?>(null);
+                options.AfterRead = (context, _) => Task.FromResult<IActionResult?>(null);
                 options.BeforeCreate = (context, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeUpdate = (context, _, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeDelete = (context, _) => Task.FromResult(AuthorizeAdmin(context));
@@ -298,6 +314,7 @@ namespace Maladin.Api
             builder.Services.AddEntityActionFilterOptions<Role, RoleRead, RoleCreate, RoleUpdate>(options =>
             {
                 options.BeforeRead = context => Task.FromResult(AuthorizeAdmin(context));
+                options.AfterRead = (context, _) => Task.FromResult<IActionResult?>(null);
                 options.BeforeCreate = (context, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeUpdate = (context, _, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeDelete = (context, _) => Task.FromResult(AuthorizeAdmin(context));
@@ -305,6 +322,8 @@ namespace Maladin.Api
 
             builder.Services.AddEntityActionFilterOptions<Translator, TranslatorRead, TranslatorCreate, TranslatorUpdate>(options =>
             {
+                options.BeforeRead = context => Task.FromResult<IActionResult?>(null);
+                options.AfterRead = (context, _) => Task.FromResult<IActionResult?>(null);
                 options.BeforeCreate = (context, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeUpdate = (context, _, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeDelete = (context, _) => Task.FromResult(AuthorizeAdmin(context));
@@ -321,6 +340,7 @@ namespace Maladin.Api
 
             builder.Services.AddEntityActionFilterOptions<User, UserRead, UserCreate, UserUpdate>(options =>
             {
+                options.BeforeRead = context => Task.FromResult<IActionResult?>(null);
                 options.AfterRead = (context, read) => Task.FromResult<IActionResult?>(context.User.IsAdmin() || context.TryGetUserId(out int userId) && read.Id == userId ? null : new UnauthorizedResult());
                 options.BeforeCreate = (context, _) => Task.FromResult(AuthorizeAdmin(context));
                 options.BeforeUpdate = (context, entityId, _) => Task.FromResult(AuthorizeAdmin(context));
@@ -354,7 +374,7 @@ namespace Maladin.Api
 
         public static WebApplicationBuilder ConfigureCrudOptions(this WebApplicationBuilder builder)
         {
-            MappedExpressionProvider.MappedExpressionProvider expressionProvider = BuildReferenceExpression(3, false);
+            MappedExpressionProvider.MappedExpressionProvider expressionProvider = BuildReferenceExpression(1, false);
 
             builder.Services.AddEntityQueryOptions<Author, AuthorRead, AuthorCreate, AuthorUpdate>(options =>
             {
@@ -790,7 +810,14 @@ namespace Maladin.Api
                     TranslatorId = ((BookDisplay)g).TranslatorId,
                 }
                 :
-                null!;
+                new UnknownGoodsRead()
+                {
+                    Id = g.Id,
+                    Name = g.Name,
+                    Overview = g.Overview,
+                    Price = g.Price,
+                    CategoryId = g.CategoryId
+                };
             Expression<Func<GoodsCart, GoodsCartRead>> goodsCartToReadExpression = g => new GoodsCartRead() { Id = g.Id, Count = g.Count, GoodsId = g.GoodsId, UserId = g.UserId };
             Expression<Func<GoodsCategory, GoodsCategoryRead>> goodsCategoryToReadExpression = g => new GoodsCategoryRead() { Id = g.Id, Name = g.Name, ParentId = g.ParentId };
             Expression<Func<GoodsOrder, GoodsOrderRead>> goodsOrderToReadExpression = g => new GoodsOrderRead() { Id = g.Id, CancelQty = g.CancelQty, GoodsId = g.GoodsId, OrderQty = g.OrderQty, OrderSetId = g.OrderSetId };

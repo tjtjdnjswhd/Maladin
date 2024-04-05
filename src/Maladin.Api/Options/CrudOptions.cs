@@ -20,9 +20,6 @@ namespace Maladin.Api.Options
         public IEnumerable<ExpressionGetDelegate<TEntity, bool>> FilterExpressions { get; set; } = [];
 
         [Required]
-        public required Func<HttpContext, IAsyncEnumerable<TRead>, IAsyncEnumerable<TRead>> ReadClientQueryFunc { get; set; }
-
-        [Required]
         public required Func<TCreate, TEntity> CreateFunc { get; set; }
 
         [Required]

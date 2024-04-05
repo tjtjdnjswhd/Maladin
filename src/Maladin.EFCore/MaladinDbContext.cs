@@ -49,14 +49,6 @@ namespace Maladin.EFCore
 
         public DbSet<Publisher> Publishers { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-#if DEBUG
-            optionsBuilder.EnableSensitiveDataLogging();
-#endif
-            base.OnConfiguring(optionsBuilder);
-        }
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<User>(builder =>

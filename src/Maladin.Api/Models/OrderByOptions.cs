@@ -81,7 +81,7 @@ namespace Maladin.Api.Models
                     }
 
                     ParameterExpression parameterExp = Expression.Parameter(typeof(T));
-                    Expression<Func<T, object>> orderByKeySelectorExp = Expression.Lambda<Func<T, object>>(Expression.Property(parameterExp, propertyInfo), parameterExp);
+                    Expression<Func<T, object>> orderByKeySelectorExp = Expression.Lambda<Func<T, object>>(Expression.Convert(Expression.Property(parameterExp, propertyInfo), typeof(object)), parameterExp);
                     _cachedOrderByKeySelectorExp.Add(propertyName, orderByKeySelectorExp);
                     orderByKeySelectorPairs.Add((orderByKeySelectorExp, direction));
                 }

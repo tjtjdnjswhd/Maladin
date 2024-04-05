@@ -19,34 +19,46 @@ namespace MappedExpressionProvider.Internals
             Dictionary<Type, LambdaExpression> result = _defaultExpressions.ToDictionary(pair => pair.Key.Dest, pair =>
             {
                 Expression body = pair.Value.Body;
-                LambdaExpression destToDestLambda;
                 Type destType = pair.Key.Dest;
                 ParameterExpression parameterExpression = Expression.Parameter(destType);
+                Expression newBody = ChangeDestObjectExpression(parameterExpression, body);
 
-                if (body is MemberInitExpression memberInitExpression)
-                {
-                    IEnumerable<MemberInfo> initedMembers = memberInitExpression.Bindings.Select(b => b.Member);
-
-                    IEnumerable<MemberBinding> bindings = initedMembers.Select(m => Expression.Bind(m, Expression.MakeMemberAccess(parameterExpression, m)));
-
-                    MemberInitExpression destToDestInitExpression = Expression.MemberInit(memberInitExpression.NewExpression, bindings);
-                    destToDestLambda = Expression.Lambda(destToDestInitExpression, parameterExpression);
-                }
-                else if (body is ConditionalExpression conditionalExpression)
-                {
-                    //TODO: 삼항 연산자일 때 구현
-                    //재귀 필요
-                    throw new NotImplementedException();
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                }
-
+                LambdaExpression destToDestLambda = Expression.Lambda(newBody, parameterExpression);
                 return destToDestLambda;
             });
 
             return result;
+        }
+
+        private static Expression ChangeDestObjectExpression(Expression destObjectExpression, Expression expression)
+        {
+            return expression switch
+            {
+                MemberInitExpression memberInitExpression => GetDestToDestMemberInit(destObjectExpression, memberInitExpression),
+                ConditionalExpression conditionalExpression => GetDestToDestConditionalRecursive(destObjectExpression, conditionalExpression),
+                UnaryExpression unaryExpression when unaryExpression.NodeType is ExpressionType.Convert => ChangeDestObjectExpression(destObjectExpression, unaryExpression.Operand),
+                _ => throw new NotImplementedException()
+            };
+        }
+
+        private static MemberInitExpression GetDestToDestMemberInit(Expression destObjectExpression, MemberInitExpression sourceToDestInitExpression)
+        {
+            IEnumerable<MemberInfo> initedMembers = sourceToDestInitExpression.Bindings.Select(b => b.Member);
+
+            Expression memberBelong = destObjectExpression.Type == sourceToDestInitExpression.Type ? destObjectExpression : Expression.Convert(destObjectExpression, sourceToDestInitExpression.Type);
+            IEnumerable<MemberBinding> bindings = initedMembers.Select(m => Expression.Bind(m, Expression.MakeMemberAccess(memberBelong, m)));
+
+            MemberInitExpression destToDestInitExpression = Expression.MemberInit(sourceToDestInitExpression.NewExpression, bindings);
+            return destToDestInitExpression;
+        }
+
+        private static ConditionalExpression GetDestToDestConditionalRecursive(Expression destObjectExpression, ConditionalExpression conditionalExpression)
+        {
+            Expression testExpression = conditionalExpression.Test is TypeBinaryExpression ? Expression.TypeIs(destObjectExpression, destObjectExpression.Type) : conditionalExpression.Test;
+            Expression ifTrue = ChangeDestObjectExpression(destObjectExpression, conditionalExpression.IfTrue);
+            Expression ifFalse = ChangeDestObjectExpression(destObjectExpression, conditionalExpression.IfFalse);
+
+            return Expression.Condition(testExpression, ifTrue, ifFalse, destObjectExpression.Type);
         }
     }
 }

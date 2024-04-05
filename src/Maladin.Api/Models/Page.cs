@@ -1,9 +1,13 @@
-﻿namespace Maladin.Api.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Maladin.Api.Models
 {
     public class Page
     {
-        public int Number { get; set; }
+        [Range(1, int.MaxValue)]
+        public int Number { get; set; } = 1;
 
-        public int Count { get; set; }
+        [Range(1, int.MaxValue)]
+        public int Count { get; set; } = 1;
     }
 }

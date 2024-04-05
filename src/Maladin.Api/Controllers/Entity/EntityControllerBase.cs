@@ -90,7 +90,7 @@ namespace Maladin.Api.Controllers.Entity
         }
 
         [HttpGet]
-        public virtual async IAsyncEnumerable<TRead> GetAsync([FromQuery(Name = "filter")] ValueParseResult<TRead, bool>? readFilter, [FromQuery][Bind(nameof(Page.Number), nameof(page.Count))] Page? page, [FromQuery(Name = "orderBy")] OrderByOptions<TRead>? orderByKey, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public virtual async IAsyncEnumerable<TRead> GetAsync([FromQuery(Name = "filter")] ValueParseResult<TRead, bool>? readFilter, [FromQuery][Bind(nameof(Page.Number), nameof(Page.Count))] Page? page, [FromQuery(Name = "orderBy")] OrderByOptions<TRead>? orderByKey, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             if ((await ActionFilterOptions.BeforeRead.Invoke(HttpContext)) is IActionResult actionResult)
             {
@@ -101,6 +101,7 @@ namespace Maladin.Api.Controllers.Entity
             IEnumerable<Expression<Func<TEntity, bool>>> filters = CrudOptions.FilterExpressions.Select(f => f.Invoke(HttpContext));
             IQueryable<TEntity> entityQuery = filters.Aggregate<Expression<Func<TEntity, bool>>, IQueryable<TEntity>>(DbSet, (q, filter) => q.Where(filter));
             IQueryable<TRead> referenceQuery = entityQuery.Select(CrudOptions.ReferenceExpression);
+
             if (readFilter is not null)
             {
                 referenceQuery = referenceQuery.Where(readFilter.GetExpression());
@@ -111,10 +112,20 @@ namespace Maladin.Api.Controllers.Entity
             int pageNumber = page is null ? 0 : page.Number;
 
             IEnumerable<OrderByPair<TRead>> orderBy = orderByKey?.OrderByKeySelectorExpPair ?? DefaultOrderBy;
-            readQuery = orderBy.Aggregate(readQuery, (query, orderByPair) => orderByPair.Direction switch
+
+            //TODO: Goods는 dto 변환 후 OrderBy시 SQL 변환 중 예외 발생
+            orderBy.First().Deconstruct(out Expression<Func<TRead, object>>? orderByExpression, out ListSortDirection direction);
+            readQuery = direction switch
             {
-                ListSortDirection.Ascending => query.OrderBy(orderByPair.Expression),
-                ListSortDirection.Descending => query.OrderByDescending(orderByPair.Expression),
+                ListSortDirection.Ascending => readQuery.OrderBy(orderByExpression),
+                ListSortDirection.Descending => readQuery.OrderByDescending(orderByExpression),
+                _ => throw new InvalidEnumArgumentException(nameof(direction), (int)direction, typeof(ListSortDirection))
+            };
+
+            readQuery = orderBy.Skip(1).Aggregate(readQuery, (query, orderByPair) => orderByPair.Direction switch
+            {
+                ListSortDirection.Ascending => ((IOrderedQueryable<TRead>)query).ThenBy(orderByPair.Expression),
+                ListSortDirection.Descending => ((IOrderedQueryable<TRead>)query).ThenByDescending(orderByPair.Expression),
                 _ => throw new InvalidEnumArgumentException(nameof(orderByPair.Direction), (int)orderByPair.Direction, typeof(ListSortDirection))
             });
 
@@ -131,7 +142,6 @@ namespace Maladin.Api.Controllers.Entity
                 yield break;
             }
 
-            dtoQuery = CrudOptions.ReadClientQueryFunc.Invoke(HttpContext, dtoQuery);
             await foreach (var dto in dtoQuery.WithCancellation(cancellationToken))
             {
                 if ((await ActionFilterOptions.AfterRead.Invoke(HttpContext, dto)) is not null)
