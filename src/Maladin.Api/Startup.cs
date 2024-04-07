@@ -571,6 +571,7 @@ namespace Maladin.Api
             static Goods CreateGoods(GoodsCreate dto) => dto switch
             {
                 BookDisplayCreate bookDisplay => new BookDisplay(bookDisplay.Name, bookDisplay.Overview, bookDisplay.Price, bookDisplay.PaperSize, bookDisplay.PageCount, bookDisplay.CoverUrl, bookDisplay.PublishedAt, bookDisplay.BookId, bookDisplay.AuthorId, bookDisplay.TranslatorId, bookDisplay.PublisherId, bookDisplay.CategoryId),
+                PencilCreate pencil => new Pencil(pencil.Name, pencil.Overview, pencil.Price, pencil.CategoryId, pencil.Maker),
                 _ => throw new ArgumentException("Invalid goods type")
             };
 
@@ -663,6 +664,20 @@ namespace Maladin.Api
                             bookDisplay.TranslatorId = update.TranslatorId;
                             bookDisplay.PublisherId = update.PublisherId;
                             bookDisplay.CategoryId = update.CategoryId;
+                            break;
+                        }
+                    case Pencil pencil:
+                        {
+                            if (dto is not PencilUpdate update)
+                            {
+                                throw new ArgumentException("dto is not type of Pencil");
+                            }
+
+                            pencil.Name = update.Name;
+                            pencil.Overview = update.Overview;
+                            pencil.Price = update.Price;
+                            pencil.CategoryId = update.CategoryId;
+                            pencil.Maker = update.Maker;
                             break;
                         }
                     default:

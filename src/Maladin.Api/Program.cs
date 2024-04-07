@@ -21,6 +21,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(o =>
 {
+    o.UseOneOfForPolymorphism();
     o.MapType(typeof(OrderByOptions<>), () => new());
     o.MapType(typeof(ValueParseResult<,>), () => new());
     o.MapType<IPAddress>(() => new() { Title = "string" });
