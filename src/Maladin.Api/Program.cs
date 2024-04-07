@@ -83,8 +83,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 SeedData(app.Services);
-Test(app.Services);
-
 
 app.Run();
 

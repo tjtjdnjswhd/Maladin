@@ -41,6 +41,8 @@ namespace Maladin.EFCore
 
         public DbSet<BookDisplay> BookDisplays { get; set; }
 
+        public DbSet<Pencil> Pencils { get; set; }
+
         public DbSet<Book> Books { get; set; }
 
         public DbSet<Author> Authors { get; set; }
@@ -103,6 +105,17 @@ namespace Maladin.EFCore
                 builder.HasOne(b => b.Author).WithMany(a => a.Books).HasForeignKey(b => b.AuthorId);
                 builder.HasOne(b => b.Translator).WithMany(t => t.Books).HasForeignKey(t => t.TranslatorId);
                 builder.HasOne(b => b.Publisher).WithMany(p => p.Books).HasForeignKey(b => b.PublisherId);
+            });
+
+            modelBuilder.Entity<Pencil>(builder =>
+            {
+                builder.ToTable(tb =>
+                {
+                    string tableName = tb.Metadata.GetTableName() ?? throw new NullReferenceException();
+                    string priceColumnName = tb.Metadata.GetProperty(nameof(Pencil.Price)).GetColumnName();
+
+                    tb.HasCheckConstraint($"CK_{tableName}_{priceColumnName}", $"[{priceColumnName}] >= 0");
+                });
             });
 
             modelBuilder.Entity<OrderSet>(builder =>

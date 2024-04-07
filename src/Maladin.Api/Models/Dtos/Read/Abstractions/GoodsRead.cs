@@ -4,9 +4,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Maladin.Api.Models.Dtos.Read.Abstractions
 {
-    public abstract class GoodsRead : ReadBase, IGoodsKind
+    public class GoodsRead : ReadBase, IGoodsKind
     {
-        public abstract EGoodsKind Kind { get; }
+        public virtual EGoodsKind Kind { get; } = EGoodsKind.Unknown;
 
         [Required(AllowEmptyStrings = false)]
         public required string Name { get; set; }

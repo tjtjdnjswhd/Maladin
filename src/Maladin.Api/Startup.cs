@@ -130,7 +130,8 @@ namespace Maladin.Api
             {
                 Dictionary<EGoodsKind, DtoTypes> goodsTypesByKind = new()
                 {
-                    { EGoodsKind.BookDisplay, new DtoTypes(typeof(BookDisplayRead), typeof(BookDisplayCreate), typeof(BookDisplayUpdate)) }
+                    { EGoodsKind.BookDisplay, new DtoTypes(typeof(BookDisplayRead), typeof(BookDisplayCreate), typeof(BookDisplayUpdate)) },
+                    { EGoodsKind.Pencil, new DtoTypes(typeof(PencilRead), typeof(PencilCreate), typeof(PencilUpdate)) }
                 };
                 options.ModelBinderProviders.Insert(0, new GoodsModelBinderProvider(goodsTypesByKind));
             });
@@ -792,32 +793,7 @@ namespace Maladin.Api
             };
             Expression<Func<Book, BookRead>> bookToReadExpression = b => new BookRead() { Id = b.Id, Isbn = b.Isbn, Sales = b.Sales, Stock = b.Stock };
             Expression<Func<Delivery, DeliveryRead>> deliveryToReadExpression = d => new DeliveryRead() { Id = d.Id, Name = d.Name };
-            Expression<Func<Goods, GoodsRead>> goodsToReadExpression = g => g is BookDisplay ?
-                new BookDisplayRead()
-                {
-                    Id = g.Id,
-                    Name = g.Name,
-                    Overview = g.Overview,
-                    Price = g.Price,
-                    CategoryId = g.CategoryId,
-                    PageCount = ((BookDisplay)g).PageCount,
-                    PaperSize = ((BookDisplay)g).PaperSize,
-                    PublishedAt = ((BookDisplay)g).PublishedAt,
-                    CoverUrl = ((BookDisplay)g).CoverUrl,
-                    AuthorId = ((BookDisplay)g).AuthorId,
-                    BookId = ((BookDisplay)g).BookId,
-                    PublisherId = ((BookDisplay)g).PublisherId,
-                    TranslatorId = ((BookDisplay)g).TranslatorId,
-                }
-                :
-                new UnknownGoodsRead()
-                {
-                    Id = g.Id,
-                    Name = g.Name,
-                    Overview = g.Overview,
-                    Price = g.Price,
-                    CategoryId = g.CategoryId
-                };
+            Expression<Func<Goods, GoodsRead>> goodsToReadExpression = g => new GoodsRead() { Id = g.Id, Name = g.Name, Overview = g.Overview, Price = g.Price, CategoryId = g.CategoryId };
             Expression<Func<GoodsCart, GoodsCartRead>> goodsCartToReadExpression = g => new GoodsCartRead() { Id = g.Id, Count = g.Count, GoodsId = g.GoodsId, UserId = g.UserId };
             Expression<Func<GoodsCategory, GoodsCategoryRead>> goodsCategoryToReadExpression = g => new GoodsCategoryRead() { Id = g.Id, Name = g.Name, ParentId = g.ParentId };
             Expression<Func<GoodsOrder, GoodsOrderRead>> goodsOrderToReadExpression = g => new GoodsOrderRead() { Id = g.Id, CancelQty = g.CancelQty, GoodsId = g.GoodsId, OrderQty = g.OrderQty, OrderSetId = g.OrderSetId };
@@ -884,6 +860,7 @@ namespace Maladin.Api
             referenceExpressionProviderBuilder.Add(userToReadExpression);
 
             MappedExpressionProvider.MappedExpressionProvider referenceExpressionProvider = referenceExpressionProviderBuilder.Build(maxDepth, referenceRecursion);
+
             return referenceExpressionProvider;
         }
     }

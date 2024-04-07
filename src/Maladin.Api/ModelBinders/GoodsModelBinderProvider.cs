@@ -82,7 +82,6 @@ namespace Maladin.Api.ModelBinders
                 }
             }
         }
-
     }
 
     public record struct DtoTypes(Type Read, Type Create, Type Update)

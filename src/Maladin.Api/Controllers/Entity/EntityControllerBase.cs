@@ -98,8 +98,7 @@ namespace Maladin.Api.Controllers.Entity
                 yield break;
             }
 
-            IEnumerable<Expression<Func<TEntity, bool>>> filters = CrudOptions.FilterExpressions.Select(f => f.Invoke(HttpContext));
-            IQueryable<TEntity> entityQuery = filters.Aggregate<Expression<Func<TEntity, bool>>, IQueryable<TEntity>>(DbSet, (q, filter) => q.Where(filter));
+            IQueryable<TEntity> entityQuery = CrudOptions.FilterExpressions.Select(f => f.Invoke(HttpContext)).Aggregate<Expression<Func<TEntity, bool>>, IQueryable<TEntity>>(DbSet, (q, filter) => q.Where(filter));
             IQueryable<TRead> referenceQuery = entityQuery.Select(CrudOptions.ReferenceExpression);
 
             if (readFilter is not null)
@@ -107,29 +106,7 @@ namespace Maladin.Api.Controllers.Entity
                 referenceQuery = referenceQuery.Where(readFilter.GetExpression());
             }
             IQueryable<TRead> readQuery = referenceQuery.Select(CrudOptions.ReferenceToProjectionExpression);
-
-            int readCount = page is null ? MaxReadCount : Math.Min(MaxReadCount, page.Count);
-            int pageNumber = page is null ? 0 : page.Number;
-
-            IEnumerable<OrderByPair<TRead>> orderBy = orderByKey?.OrderByKeySelectorExpPair ?? DefaultOrderBy;
-
-            //TODO: Goods는 dto 변환 후 OrderBy시 SQL 변환 중 예외 발생
-            orderBy.First().Deconstruct(out Expression<Func<TRead, object>>? orderByExpression, out ListSortDirection direction);
-            readQuery = direction switch
-            {
-                ListSortDirection.Ascending => readQuery.OrderBy(orderByExpression),
-                ListSortDirection.Descending => readQuery.OrderByDescending(orderByExpression),
-                _ => throw new InvalidEnumArgumentException(nameof(direction), (int)direction, typeof(ListSortDirection))
-            };
-
-            readQuery = orderBy.Skip(1).Aggregate(readQuery, (query, orderByPair) => orderByPair.Direction switch
-            {
-                ListSortDirection.Ascending => ((IOrderedQueryable<TRead>)query).ThenBy(orderByPair.Expression),
-                ListSortDirection.Descending => ((IOrderedQueryable<TRead>)query).ThenByDescending(orderByPair.Expression),
-                _ => throw new InvalidEnumArgumentException(nameof(orderByPair.Direction), (int)orderByPair.Direction, typeof(ListSortDirection))
-            });
-
-            readQuery = readQuery.Skip(readCount * pageNumber).Take(readCount);
+            readQuery = OrderBy(readQuery, orderByKey, page);
 
             IAsyncEnumerable<TRead> dtoQuery;
             try
@@ -142,12 +119,9 @@ namespace Maladin.Api.Controllers.Entity
                 yield break;
             }
 
-            await foreach (var dto in dtoQuery.WithCancellation(cancellationToken))
+            await foreach (var dto in dtoQuery.WhereAwait(async r => (await ActionFilterOptions.AfterRead.Invoke(HttpContext, r)) is null).WithCancellation(cancellationToken))
             {
-                if ((await ActionFilterOptions.AfterRead.Invoke(HttpContext, dto)) is not null)
-                {
-                    yield return dto;
-                }
+                yield return dto;
             }
         }
 
@@ -231,6 +205,35 @@ namespace Maladin.Api.Controllers.Entity
             {
                 return new DbContextExceptionResult(e);
             }
+        }
+
+        protected IQueryable<TRead> OrderBy(IQueryable<TRead> query, OrderByOptions<TRead>? orderByOptions, Page? page)
+        {
+            IEnumerable<OrderByPair<TRead>> orderByPairs = orderByOptions?.OrderByKeySelectorExpPair ?? DefaultOrderBy;
+            OrderByPair<TRead> firstOrder = orderByPairs.FirstOrDefault();
+            if (firstOrder == default)
+            {
+                return query;
+            }
+
+            IOrderedQueryable<TRead> orderedQuery = firstOrder.Direction switch
+            {
+                ListSortDirection.Ascending => query.OrderBy(firstOrder.Expression),
+                ListSortDirection.Descending => query.OrderByDescending(firstOrder.Expression),
+                _ => throw new InvalidEnumArgumentException(nameof(firstOrder.Direction), (int)firstOrder.Direction, typeof(ListSortDirection))
+            };
+
+            orderedQuery = orderByPairs.Skip(1).Aggregate(orderedQuery, (query, orderByPair) => orderByPair.Direction switch
+            {
+                ListSortDirection.Ascending => query.ThenBy(orderByPair.Expression),
+                ListSortDirection.Descending => query.ThenByDescending(orderByPair.Expression),
+                _ => throw new InvalidEnumArgumentException(nameof(orderByPair.Direction), (int)orderByPair.Direction, typeof(ListSortDirection))
+            });
+
+            int readCount = page is null ? MaxReadCount : Math.Min(MaxReadCount, page.Count);
+            int skip = (page?.Number - 1 ?? 0) * readCount;
+
+            return orderedQuery.Skip(skip).Take(readCount);
         }
     }
 }
