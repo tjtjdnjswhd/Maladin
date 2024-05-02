@@ -3,11 +3,10 @@ using Maladin.EFCore.Models.Abstractions;
 using Maladin.EFCore.ValueGenerators;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ValueGeneration;
 
 namespace Maladin.EFCore
 {
-    public class MaladinDbContext(DbContextOptions<MaladinDbContext> options) : DbContext(options)
+    public abstract class MaladinDbContext(DbContextOptions options) : DbContext(options)
     {
         public DbSet<User> Users { get; set; }
 
@@ -30,6 +29,8 @@ namespace Maladin.EFCore
         public DbSet<Delivery> Deliveries { get; set; }
 
         public DbSet<Payment> Payments { get; set; }
+
+        public DbSet<TossPaymentsPayment> TossPaymentsPayments { get; set; }
 
         public DbSet<GoodsOrder> GoodsOrders { get; set; }
 
@@ -118,6 +119,16 @@ namespace Maladin.EFCore
                 });
             });
 
+            modelBuilder.Entity<Payment>(builder =>
+            {
+                builder.UseTpcMappingStrategy();
+            });
+
+            modelBuilder.Entity<TossPaymentsPayment>(builder =>
+            {
+                builder.HasAlternateKey(t => t.PaymentKey);
+            });
+
             modelBuilder.Entity<OrderSet>(builder =>
             {
                 builder.ToTable(tb =>
@@ -133,7 +144,6 @@ namespace Maladin.EFCore
                 });
 
                 builder.HasAlternateKey(o => o.Uid);
-                builder.Property(o => o.Uid).HasValueGenerator<SequentialGuidValueGenerator>();
                 builder.Property(o => o.OrderedAt).HasValueGenerator<DateTimeOffsetUtcNowGenerator>().ValueGeneratedOnAdd();
 
                 builder.HasOne(o => o.Delivery).WithMany(d => d.Orders).HasForeignKey(o => o.DeliveryId);
@@ -155,6 +165,8 @@ namespace Maladin.EFCore
                 });
             });
         }
+
+        public abstract Task<bool> TryConsumePointAsync(int userId, int pointAmount, CancellationToken cancellationToken = default);
 
         public async Task<bool> IsUserRelationAsync<T>(int entityId, int userId, CancellationToken cancellationToken = default)
             where T : EntityBase, IUserRelationEntity

@@ -1,4 +1,5 @@
 ﻿using Maladin.EFCore;
+using Maladin.SqlServerMigration;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -9,7 +10,7 @@ var builder = Host.CreateApplicationBuilder(args);
 
 string connectionString = builder.Configuration.GetConnectionString("Default") ?? throw new NullReferenceException();
 
-builder.Services.AddDbContext<MaladinDbContext>(options =>
+builder.Services.AddDbContext<MaladinDbContext, MaladinSqlServerDbContext>(options =>
 {
     options.UseSqlServer(connectionString, serverOptions =>
     {

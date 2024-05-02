@@ -8,8 +8,6 @@ using Maladin.EFCore.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
-using Portone.Extensions;
-
 using System.Net;
 using System.Text;
 
@@ -58,8 +56,6 @@ builder.ConfigureEntityActionFilter();
 builder.ConfigureCrudOptions();
 
 builder.Services.AddDistributedMemoryCache();
-
-builder.Services.AddPortoneClient();
 
 if (builder.Environment.IsDevelopment())
 {

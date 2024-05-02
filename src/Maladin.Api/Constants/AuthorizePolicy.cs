@@ -1,4 +1,4 @@
-﻿namespace Maladin.Api.Extensions
+﻿namespace Maladin.Api.Constants
 {
     internal static class AuthorizePolicy
     {

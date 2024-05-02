@@ -19,7 +19,7 @@ using System.Runtime.CompilerServices;
 
 namespace Maladin.Api.Controllers.Entity
 {
-    [Route("api/entity/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     public abstract class EntityControllerBase<TEntity, TRead, TCreate, TUpdate> : ControllerBase
         where TEntity : EntityBase

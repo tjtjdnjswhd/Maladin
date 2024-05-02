@@ -22,7 +22,7 @@
     <ProjectReference Include="..\maladin.efcore\Maladin.EFCore.csproj" />
     <ProjectReference Include="..\Maladin.Services\Maladin.Services.csproj" />
     <ProjectReference Include="..\MappedExpressionProvider\MappedExpressionProvider.csproj" />
-    <ProjectReference Include="..\Portone\Portone.csproj" />
+    <ProjectReference Include="..\TossPayments-DotNet\src\TossPayments\TossPayments.csproj" />
   </ItemGroup>
 
 </Project>

@@ -273,27 +273,6 @@ namespace Maladin.Api
                 options.BeforeDelete = (context, entityId) => Task.FromResult(AuthorizeAdmin(context));
             });
 
-            builder.Services.AddEntityActionFilterOptions<Payment, PaymentRead, PaymentCreate, PaymentUpdate>(options =>
-            {
-                static async Task<IActionResult?> AuthorizeIsAdminOrHavePaymentAsync(HttpContext httpContext, int entityId)
-                {
-                    if (!httpContext.TryGetUserId(out int userId))
-                    {
-                        return new UnauthorizedResult();
-                    }
-
-                    using var scope = httpContext.RequestServices.CreateScope();
-                    MaladinDbContext dbContext = scope.ServiceProvider.GetRequiredService<MaladinDbContext>();
-                    return await dbContext.Payments.AnyAsync(p => p.Id == entityId && p.Order.UserId == userId) ? null : new ForbidResult();
-                }
-
-                options.BeforeRead = context => Task.FromResult(AuthorizeAuthenticated(context));
-                options.AfterRead = async (context, read) => await AuthorizeIsAdminOrHavePaymentAsync(context, read.Id);
-                options.BeforeCreate = (context, _) => Task.FromResult(AuthorizeAuthenticated(context));
-                options.BeforeUpdate = async (context, entityId, update) => await AuthorizeIsAdminOrHavePaymentAsync(context, entityId);
-                options.BeforeDelete = (context, _) => Task.FromResult(AuthorizeAdmin(context));
-            });
-
             builder.Services.AddEntityActionFilterOptions<Point, PointRead, PointCreate, PointUpdate>(options =>
             {
                 options.BeforeRead = context => Task.FromResult(AuthorizeAuthenticated(context));
@@ -494,15 +473,6 @@ namespace Maladin.Api
                 options.UpdateFunc = UpdateOrderSet;
             });
 
-            builder.Services.AddEntityQueryOptions<Payment, PaymentRead, PaymentCreate, PaymentUpdate>(options =>
-            {
-                options.ReferenceExpression = expressionProvider.Get<Payment, PaymentRead>(true);
-                options.ProjectionExpression = expressionProvider.Get<Payment, PaymentRead>(false);
-                options.ReferenceToProjectionExpression = expressionProvider.Get<PaymentRead>();
-                options.CreateFunc = CreatePayment;
-                options.UpdateFunc = UpdatePayment;
-            });
-
             builder.Services.AddEntityQueryOptions<Point, PointRead, PointCreate, PointUpdate>(options =>
             {
                 options.ReferenceExpression = expressionProvider.Get<Point, PointRead>(true);
@@ -590,8 +560,6 @@ namespace Maladin.Api
             static OAuthProvider CreateOAuthProvider(OAuthProviderCreate dto) => new(dto.Name);
 
             static OrderSet CreateOrderSet(OrderSetCreate dto) => new(dto.UsedPoints, dto.Address, dto.PostCode, dto.ReceiverName, dto.Message, dto.PhoneNumber, dto.UserId);
-
-            static Payment CreatePayment(PaymentCreate dto) => new(Enum.Parse<EPaymentStatus>(dto.Status));
 
             static Point CreatePoint(PointCreate dto) => new(dto.Amount, dto.UserId);
 
@@ -739,14 +707,6 @@ namespace Maladin.Api
                 entity.InvoiceNumber = dto.InvoiceNumber;
             }
 
-            static void UpdatePayment(Payment entity, PaymentUpdate dto)
-            {
-                entity.Status = Enum.Parse<EPaymentStatus>(dto.Status);
-                entity.BalanceAmount = dto.BalanceAmount;
-                entity.PaidAmount = dto.PaidAmount;
-                entity.ImpUid = dto.ImpUid;
-            }
-
             static void UpdatePoint(Point entity, PointUpdate dto)
             {
                 entity.Amount = dto.Amount;
@@ -833,7 +793,6 @@ namespace Maladin.Api
                 UserId = o.UserId,
                 DeliveryId = o.DeliveryId
             };
-            Expression<Func<Payment, PaymentRead>> paymentToReadExpression = p => new PaymentRead() { Id = p.Id, BalanceAmount = p.BalanceAmount, ImpUid = p.ImpUid, PaidAmount = p.PaidAmount, Status = p.Status.ToString() };
             Expression<Func<Point, PointRead>> pointToReadExpression = p => new PointRead() { Id = p.Id, Amount = p.Amount, Balance = p.Balance, ExpiredAt = p.ExpiredAt, UserId = p.UserId };
             Expression<Func<Publisher, PublisherRead>> publisherToReadExpression = p => new PublisherRead() { Id = p.Id, Introduce = p.Introduce, Name = p.Name };
             Expression<Func<Role, RoleRead>> roleToReadExpression = r => new RoleRead() { Id = r.Id, Name = r.Name, Priority = r.Priority };
@@ -866,7 +825,6 @@ namespace Maladin.Api
             referenceExpressionProviderBuilder.Add(oAuthIdToReadExpression);
             referenceExpressionProviderBuilder.Add(oAuthProviderToReadExpression);
             referenceExpressionProviderBuilder.Add(orderSetToReadExpression);
-            referenceExpressionProviderBuilder.Add(paymentToReadExpression);
             referenceExpressionProviderBuilder.Add(pointToReadExpression);
             referenceExpressionProviderBuilder.Add(publisherToReadExpression);
             referenceExpressionProviderBuilder.Add(roleToReadExpression);
