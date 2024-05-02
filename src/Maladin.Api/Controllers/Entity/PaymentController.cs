@@ -16,7 +16,7 @@ using System.Diagnostics;
 
 namespace Maladin.Api.Controllers.Entity
 {
-    public class PaymentController(MaladinDbContext dbContext, ILogger logger, IEntityConfigurationService entityConfiguration, IOptions<CrudOptions<Payment, PaymentRead, PaymentCreate, PaymentUpdate>> crudOptions, IOptions<EntityActionFilterOptions<Payment, PaymentRead, PaymentCreate, PaymentUpdate>> actionFilterOptions, IPaymentService paymentService)
+    public class PaymentController(MaladinDbContext dbContext, ILogger<PaymentController> logger, IEntityConfigurationService entityConfiguration, IOptions<CrudOptions<Payment, PaymentRead, PaymentCreate, PaymentUpdate>> crudOptions, IOptions<EntityActionFilterOptions<Payment, PaymentRead, PaymentCreate, PaymentUpdate>> actionFilterOptions, IPaymentService paymentService)
         : EntityControllerBase<Payment, PaymentRead, PaymentCreate, PaymentUpdate>(dbContext, logger, entityConfiguration, crudOptions, actionFilterOptions)
     {
         private readonly IPaymentService _paymentService = paymentService;

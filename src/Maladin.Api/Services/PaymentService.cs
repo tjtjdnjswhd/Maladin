@@ -10,6 +10,7 @@ namespace Maladin.Api.Services
     public class PaymentService(IDistributedCache cache) : IPaymentService
     {
         private const string CachePrefix = "__Payment_";
+        private static readonly DistributedCacheEntryOptions _paymentExpireOption = new() { SlidingExpiration = TimeSpan.FromMinutes(10) };
 
         private readonly IDistributedCache _cache = cache;
 
@@ -17,7 +18,7 @@ namespace Maladin.Api.Services
         {
             Guid orderUid = Guid.NewGuid();
             PaymentPrepareResponse response = new(userId, orderUid, amount, point);
-            await _cache.SetAsync(GetCacheKey(orderUid), JsonSerializer.SerializeToUtf8Bytes(response), cancellationToken);
+            await _cache.SetAsync(GetCacheKey(orderUid), JsonSerializer.SerializeToUtf8Bytes(response), _paymentExpireOption, cancellationToken);
             return response;
         }
 
