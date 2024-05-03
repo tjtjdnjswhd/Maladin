@@ -1,0 +1,64 @@
+{
+  "Entity": {
+    "Default": {
+    
+    },
+    "Author": {
+
+    },
+    "Book": {
+
+    },
+    "Delivery": {
+
+    },
+    "GoodsCart": {
+
+    },
+    "GoodsCategory": {
+
+    },
+    "Goods": {
+
+    },
+    "GoodsOrder": {
+
+    },
+    "GoodsReview": {
+
+    },
+    "Membership": {
+
+    },
+    "OAuthId": {
+
+    },
+    "OAuthProvider": {
+
+    },
+    "OrderSet": {
+
+    },
+    "Payment": {
+
+    },
+    "Point": {
+
+    },
+    "Publisher": {
+
+    },
+    "Role": {
+
+    },
+    "Translator": {
+
+    },
+    "UserAddress": {
+
+    },
+    "User": {
+
+    }
+  }
+}

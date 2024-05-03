@@ -1,0 +1,3 @@
+[submodule "src/TossPayments-DotNet"]
+	path = src/TossPayments-DotNet
+	url = https://github.com/tjtjdnjswhd/TossPayments-DotNet.git
